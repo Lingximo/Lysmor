@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TA · 大平层</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%90%9F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><i class="dot"></i><span>TA · 大平层</span><a href="/3d" class="to3d">3D 视角 →</a></div>
+    <div class="clock">
+      <span id="clock">--:--</span>
+      <span class="mode" id="mode">白天</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="stage" id="stage">
+      <canvas id="house"></canvas>
+      <div class="hint">点一下房间可以看名字</div>
+    </div>
+
+    <aside class="panel">
+      <section class="card who">
+        <img id="avatar" src="/static/avatar.png" alt="TA">
+        <div class="who-text">
+          <div class="name">TA</div>
+          <div class="sub" id="where">她的房间</div>
+        </div>
+        <span class="chip" id="emotion">平静</span>
+      </section>
+
+      <section class="card act">
+        <div class="label">正在</div>
+        <div class="value" id="activity">窝在房间里</div>
+      </section>
+
+      <section class="card need">
+        <div class="row"><span>饥饿</span><div class="bar"><i id="b-hunger"></i></div><b id="v-hunger">0</b></div>
+        <div class="row"><span>口渴</span><div class="bar"><i id="b-thirst"></i></div><b id="v-thirst">0</b></div>
+        <div class="row"><span>便意</span><div class="bar warm"><i id="b-bowel"></i></div><b id="v-bowel">0</b></div>
+        <div class="row"><span>尿意</span><div class="bar warm"><i id="b-bladder"></i></div><b id="v-bladder">0</b></div>
+        <div class="row"><span>精力</span><div class="bar cool"><i id="b-energy"></i></div><b id="v-energy">0</b></div>
+        <div class="row"><span>心情</span><div class="bar mood"><i id="b-mood"></i></div><b id="v-mood">0</b></div>
+      </section>
+
+      <section class="card user">
+        <div class="label">你</div>
+        <div class="value" id="user-status">还没说过话</div>
+        <div class="hint" id="user-hint"></div>
+      </section>
+
+      <section class="card view">
+        <img id="window" src="/bg/evening.jpg" alt="窗外">
+        <div class="cap" id="window-cap">她房间窗外 · 傍晚</div>
+      </section>
+
+      <section class="card log">
+        <div class="label">刚刚</div>
+        <ul id="events"><li>——</li></ul>
+      </section>
+    </aside>
+  </main>
+</div>
+<script src="/static/app.js?v=20"></script>
+</body>
+</html>

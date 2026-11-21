@@ -1,0 +1,53 @@
+{
+  "_说明": [
+    "复制本文件为 config.json，再填写你自己的值。",
+    "config.json 已被 .gitignore 屏蔽，永远不要提交到公开仓库。",
+    "所有真实密钥/口令/账号只填在 config.json 里，本示例文件保持占位符。"
+  ],
+  "data_dir": "D:\\你的数据目录",
+  "gate_token": "你自己生成的一段随机口令（越长越好）",
+  "ports": {
+    "web_chat": 8001,
+    "console": 8009,
+    "life_panel": 8005,
+    "brain_map": 8006,
+    "house_3d": 8007,
+    "gallery": 8002,
+    "video_http_reserved": 8003,
+    "video_https_reserved": 8004
+  },
+  "llm": {
+    "provider": "你的 LLM 服务商",
+    "api_key": "",
+    "base_url": "",
+    "model": ""
+  },
+  "vision": {
+    "engine": "ollama",
+    "model": "qwen3-vl:4b"
+  },
+  "memory": {
+    "embedding_engine": "ollama",
+    "embedding_model": "bge-m3",
+    "scope_mode": "global"
+  },
+  "tts": {
+    "engine": "edge-tts",
+    "voice": ""
+  },
+  "im": {
+    "bot_framework": "AstrBot",
+    "protocol": "NapCat（QQ）",
+    "note": "QQ 客户端由使用者自行安装并扫码登录；本项目不包含 QQ 本体。"
+  },
+  "cloud_backup": {
+    "provider": "夸克网盘（或自选其它）",
+    "cookies": "",
+    "folder_name": "你的备份文件夹名",
+    "keep_sets": 7
+  },
+  "remote_access": {
+    "tunnel": "蒲公英（或自选其它）",
+    "account": ""
+  }
+}

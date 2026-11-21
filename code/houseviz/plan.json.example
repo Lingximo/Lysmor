@@ -1,0 +1,66 @@
+{
+  "_说明": "通用示例布局（新装机的用户自己配一套；结构需与 server.py 期望一致）。",
+  "size": [12, 8],
+  "slab": [0, 0, 12, 8],
+  "rooms": [
+    {"id": "living",  "name": "客厅",   "rect": [3, 0, 9, 4], "floor": "wood", "labelPos": [7.5, 1.5]},
+    {"id": "kitchen", "name": "厨房",   "rect": [9, 4, 12, 8], "floor": "tile", "labelPos": [10.5, 6.0]},
+    {"id": "bedroom", "name": "卧室",   "rect": [0, 4, 5, 8], "floor": "wood", "labelPos": [2.5, 6.0]},
+    {"id": "study",   "name": "书房",   "rect": [5, 4, 9, 8], "floor": "wood", "labelPos": [7.0, 6.0]},
+    {"id": "toilet",  "name": "卫生间", "rect": [0, 0, 3, 4], "floor": "tile", "labelPos": [1.5, 2.0]},
+    {"id": "balcony", "name": "阳台",   "rect": [9, 0, 12, 2], "floor": "tile", "labelPos": [10.5, 0.8]},
+    {"id": "hall",    "name": "玄关",   "rect": [3, 0, 6, 0.6], "floor": "wood", "labelPos": [4.5, 0.3]}
+  ],
+  "zones": [
+    {"text": "客厅", "x": 7.5, "y": 1.5},
+    {"text": "卧室", "x": 2.5, "y": 6.0}
+  ],
+  "windows": [
+    {"a": [9.0, 0.0], "b": [10.0, 0.0], "kind": "big"},
+    {"a": [11.0, 2.0], "b": [12.0, 2.0], "kind": "small"},
+    {"a": [5.0, 8.0], "b": [6.0, 8.0], "kind": "big"},
+    {"a": [0.0, 6.0], "b": [0.0, 7.0], "kind": "small"}
+  ],
+  "doors": [
+    {"x": 4.0, "y": 0.6, "dir": "v", "w": 0.9, "room": "living", "no_leaf": false},
+    {"x": 3.0, "y": 4.0, "dir": "h", "w": 0.9, "room": "bedroom", "no_leaf": false},
+    {"x": 7.0, "y": 4.0, "dir": "h", "w": 0.9, "room": "study", "no_leaf": false},
+    {"x": 9.0, "y": 4.0, "dir": "h", "w": 0.9, "room": "kitchen", "no_leaf": false},
+    {"x": 1.5, "y": 4.0, "dir": "h", "w": 0.8, "room": "toilet", "no_leaf": true},
+    {"x": 9.0, "y": 2.0, "dir": "v", "w": 0.8, "room": "balcony", "no_leaf": false},
+    {"x": 6.0, "y": 0.6, "dir": "v", "w": 0.8, "room": "hall", "no_leaf": false}
+  ],
+  "furniture": [
+    {"t": "sofa",   "r": [5.4, 0.8, 2.4, 1.0], "note": "窝着看片的地方"},
+    {"t": "tv",     "r": [3.2, 0.8, 0.6, 0.3], "note": "电视机"},
+    {"t": "table",  "r": [4.0, 2.4, 1.4, 0.9], "note": "茶几"},
+    {"t": "bed",    "r": [0.6, 5.2, 2.0, 1.5], "note": "睡觉的地方"},
+    {"t": "desk",   "r": [3.8, 5.2, 1.4, 0.7], "note": "写东西的地方"},
+    {"t": "chair",  "r": [4.0, 6.2, 0.5, 0.5], "note": "椅子"},
+    {"t": "fridge", "r": [11.0, 6.8, 0.8, 0.8], "note": "冰箱"},
+    {"t": "stove",  "r": [10.0, 6.8, 0.9, 0.6], "note": "灶台"},
+    {"t": "toilet", "r": [0.6, 0.8, 0.7, 0.8], "note": "马桶"},
+    {"t": "wash",   "r": [1.8, 0.8, 0.7, 0.5], "note": "洗手池"},
+    {"t": "plant",  "r": [11.2, 0.4, 0.5, 0.5], "note": "阳台绿植"},
+    {"t": "shelf",  "r": [5.2, 6.8, 1.6, 0.4], "note": "书架"}
+  ],
+  "nav": {
+    "nodes": {
+      "dad": [7.0, 6.0], "lw": [1.5, 2.0], "lc": [4.0, 2.0],
+      "le": [10.0, 2.0], "se": [10.5, 6.5], "sw": [1.5, 6.5]
+    },
+    "edges": [
+      ["dad", "lc"], ["lw", "lc"], ["lc", "le"], ["le", "se"],
+      ["se", "sw"], ["sw", "lw"], ["dad", "se"], ["le", "dad"],
+      ["sw", "dad"], ["lw", "sw"], ["lc", "se"], ["le", "lc"]
+    ]
+  },
+  "spots": {
+    "dad_room": {"stand": [7.0, 6.0]},
+    "kitchen":  {"stand": [10.5, 6.5], "fridge": [11.0, 7.0]},
+    "living":   {"sofa": [6.4, 1.2], "tv": [3.6, 1.0], "water": [5.0, 1.4]},
+    "her_room": {"desk": [4.4, 5.6], "bed": [1.4, 6.0], "mid": [2.5, 6.5], "window": [4.8, 7.6]},
+    "toilet":   {"stand": [1.0, 2.0]},
+    "balcony":  {"stand": [10.5, 0.8]}
+  }
+}

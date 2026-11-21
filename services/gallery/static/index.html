@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画廊</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>画廊</h1>
+    <span id="count"></span>
+  </header>
+
+  <main id="grid"></main>
+
+  <div id="detail" hidden>
+    <div id="detail-card">
+      <img id="detail-img" alt="">
+      <div id="detail-meta">
+        <h2 id="detail-title"></h2>
+        <p id="detail-note"></p>
+        <p id="detail-date"></p>
+      </div>
+      <button id="detail-close">关闭</button>
+    </div>
+  </div>
+
+<script src="app.js"></script>
+</body>
+</html>

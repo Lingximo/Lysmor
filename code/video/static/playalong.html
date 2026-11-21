@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>陪玩</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070d18,#0b1220 60%,#0a0f1a);
+  color:#dbeafe;font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box}
+h1{font-size:20px;font-weight:600;margin:0;letter-spacing:.5px}
+#dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;background:#64748b;box-shadow:0 0 0 4px #64748b33}
+#dot.on{background:#22c55e;box-shadow:0 0 0 4px #22c55e33}
+#state{color:#9fb3cc;font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+button{padding:11px 20px;border-radius:14px;border:1px solid rgba(120,170,255,.45);
+  background:rgba(30,60,100,.45);color:#e6f3ff;font-size:14px;cursor:pointer}
+button.primary{background:rgba(50,110,180,.6)}
+button.danger{border-color:rgba(255,120,120,.5);background:rgba(120,40,40,.45)}
+button:disabled{opacity:.5;cursor:default}
+#tip{color:#7f93b8;font-size:12px;max-width:520px;text-align:center}
+#log{max-width:560px;width:100%;max-height:160px;overflow:auto;background:rgba(10,18,30,.7);
+  border:1px solid rgba(80,110,160,.3);border-radius:12px;padding:10px;font:12px/1.5 Consolas,monospace;color:#9fb3cc;white-space:pre-wrap}
+</style></head><body>
+<h1>陪玩</h1>
+<div id="state"><span id="dot"></span><span id="label">读取中…</span></div>
+<div class="row">
+  <button id="on" class="primary">开始陪玩</button>
+  <button id="off">停下</button>
+  <button id="panic" class="danger">紧急停</button>
+</div>
+<div id="tip">开着的时候桌宠会出现，隔一会儿瞄一眼屏幕、随口点评，还会自己动手做事；这里也能随时停下。</div>
+<div id="log"></div>
+<script type="module">
+const $ = (s)=>document.querySelector(s);
+const dot=$('#dot'), label=$('#label'), log=$('#log');
+function say(t){ log.textContent = ('['+new Date().toLocaleTimeString()+'] '+t+'\n'+log.textContent).slice(0,4000); }
+function paint(j){
+  const on = !!(j && j.on);
+  dot.classList.toggle('on', on);
+  if (!on) { label.textContent = '没在陪玩'; return; }
+  const pets = (j.pet_clients || 0), pids = (j.overlay_pids || []).length;
+  if (pets > 0) label.textContent = '陪玩中 · 桌宠 ' + pets + ' 只';
+  else if (pids > 0) label.textContent = '陪玩中 · 小人 ' + pids + ' 个';
+  else label.textContent = '陪玩中';
+}
+async function refresh(){
+  try { const j = await (await fetch('/api/companion/state')).json(); paint(j); }
+  catch(e){ label.textContent = '连不上 8003'; }
+}
+async function toggle(on){
+  try {
+    const r = await fetch('/api/companion/toggle', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on})});
+    const j = await r.json();
+    say((on?'开启':'关闭')+' → ok='+!!j.ok+(j.overlay?(' overlay='+j.overlay):'')+(j.error?(' err='+j.error):''));
+    await refresh();
+  } catch(e){ say('请求失败: '+e); }
+}
+$('#on').onclick = ()=>toggle(true);
+$('#off').onclick = ()=>toggle(false);
+$('#panic').onclick = async()=>{
+  try { const j = await (await fetch('/api/companion/panic',{method:'POST'})).json(); say('紧急停 → '+JSON.stringify(j).slice(0,200)); await refresh(); }
+  catch(e){ say('紧急停失败: '+e); }
+};
+refresh(); setInterval(refresh, 5000);
+</script></body></html>

@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_taste
+display_name: 伴侣品尝
+desc: 看到你发的食物图片时，用本地视觉模型识别味道，再激发情绪与神经递质
+help: 自动运行；发食物图片给她，她会「尝」一口并作出反应
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

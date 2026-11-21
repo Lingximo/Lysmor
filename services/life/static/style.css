@@ -1,0 +1,80 @@
+/* 生命面板 · 骨架样式 */
+:root {
+  --bg: #0a101c;
+  --panel: #101a2b;
+  --text: #d8e4f4;
+  --muted: #7c8fa8;
+  --accent: #ffb454;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+h1 { font-size: 18px; font-weight: 600; }
+
+#clock { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+#cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+.card .label { font-size: 13px; color: var(--muted); }
+
+.card .value {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 6px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.card .bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+
+.card .bar > div {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width .5s ease;
+}
+
+#chart-box { background: var(--panel); border-radius: 14px; padding: 12px; }
+
+#chart { width: 100%; display: block; }
+
+footer {
+  padding: 12px 20px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}

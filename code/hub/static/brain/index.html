@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>记忆大脑 · TA</title>
+  <link rel="stylesheet" href="/brain/style.css">
+<style id="she-hide-chrome">
+  /* 只留银河画布：其余 UI 由「她·此刻」自己的 HUD 承担 */
+  .topbar, .sidebar, .hint, .toast { display: none !important; }
+  body { background: #020309 !important; }
+  #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <h1>记忆大脑</h1>
+        <p>TA · LivingMemory 只读视图</p>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="搜一条记忆，比如：最近在忙什么" autocomplete="off">
+      <button id="search-btn">搜</button>
+      <div id="search-results" class="search-results"></div>
+    </div>
+    <div class="top-actions">
+      <button id="rotate-btn" class="active">3D 旋转</button>
+      <button id="reset-btn">重置视角</button>
+      <button id="refresh-btn">刷新</button>
+      <span id="status" class="status">连接中…</span>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <section class="panel stats">
+      <div class="stat"><b id="stat-nodes">-</b><span>节点</span></div>
+      <div class="stat"><b id="stat-edges">-</b><span>连线</span></div>
+      <div class="stat"><b id="stat-atoms">-</b><span>原子</span></div>
+      <div class="stat"><b id="stat-memories">-</b><span>记忆</span></div>
+    </section>
+
+    <section class="panel">
+      <h2>脑区 · 记忆住在哪</h2>
+      <div id="regions" class="regions">加载中…</div>
+    </section>
+
+    <section class="panel">
+      <h2>遗忘曲线</h2>
+      <canvas id="decay-canvas" class="decay-canvas"></canvas>
+      <div id="decay-legend" class="decay-legend"></div>
+      <div id="decay-note" class="decay-note">点图上的点，看是哪条记忆</div>
+    </section>
+
+    <section class="panel">
+      <h2>记忆体温</h2>
+      <div id="phases" class="phases"></div>
+      <div class="vitals">
+        <div><b id="vital-clarity">-</b><span>平均清晰度</span></div>
+        <div><b id="vital-drop">-</b><span>今日预计淡忘</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>最该被想起</h2>
+      <div id="fading" class="fading">加载中…</div>
+    </section>
+
+    <section class="panel">
+      <h2>图例</h2>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="panel">
+      <h2>最近记忆</h2>
+      <div id="recent" class="recent">加载中…</div>
+    </section>
+
+    <section class="panel detail">
+      <h2>选中节点</h2>
+      <div id="detail" class="detail-body">点一个发光的点看看</div>
+    </section>
+  </aside>
+
+  <div class="hint">拖动旋转 · 滚轮缩放 · 点节点看关系 · 光圈外越远的星越老，越暗越淡</div>
+  <div id="toast" class="toast"></div>
+
+  <script src="/brain/app.js"></script>
+</body>
+</html>

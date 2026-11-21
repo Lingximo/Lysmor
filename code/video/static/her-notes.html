@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TA的日记</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070d18,#0b1220 60%,#0a0f1a);
+  color:#dbeafe;font:14px/1.7 "Microsoft YaHei",system-ui,sans-serif;padding:20px;box-sizing:border-box;max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:0 0 2px}
+#sub{color:#7f93b8;font-size:12px;margin-bottom:16px}
+.card{background:rgba(10,18,30,.7);border:1px solid rgba(80,110,160,.3);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card .meta{color:#7f93b8;font-size:11px;margin-bottom:4px}
+.tag{display:inline-block;padding:0 8px;border-radius:8px;font-size:11px;margin-right:6px}
+.tag.diary{background:rgba(80,160,255,.18);color:#9cc7ff}
+.tag.playalong{background:rgba(255,170,80,.16);color:#ffc98f}
+.tag.manual{background:rgba(120,220,160,.14);color:#9fe8bd}
+.card .text{white-space:pre-wrap;word-break:break-word}
+#newbox{position:sticky;bottom:8px;background:rgba(10,18,30,.95);border:1px solid rgba(80,110,160,.4);
+  border-radius:14px;padding:10px;display:flex;gap:8px;align-items:center}
+#newtext{flex:1;background:rgba(20,32,52,.6);border:1px solid rgba(120,170,255,.4);border-radius:10px;
+  color:#e6f3ff;font:13px "Microsoft YaHei",sans-serif;padding:9px 12px;outline:none;resize:none;height:52px}
+button{padding:10px 16px;border-radius:10px;border:1px solid rgba(120,170,255,.45);background:rgba(50,110,180,.5);
+  color:#e6f3ff;font:13px "Microsoft YaHei",sans-serif;cursor:pointer}
+button:disabled{opacity:.5}
+#ref{position:fixed;right:14px;top:12px;padding:6px 12px}
+</style></head><body>
+<h1>🐟 TA的日记</h1>
+<div id="sub">她平时自己写感受，陪玩时也写；你也能替她补一条。</div>
+<button id="ref" onclick="load()">刷新</button>
+<div id="list">读取中…</div>
+<div id="newbox">
+  <textarea id="newtext" placeholder="替她写一条…"></textarea>
+  <button id="add">写进去</button>
+</div>
+<script type="module">
+const $=(s)=>document.querySelector(s);
+const tagName={diary:'日记',playalong:'陪玩时写的',manual:'你代笔'};
+async function load(){
+  try{
+    const j=await(await fetch('/api/her-notes?n=200')).json();
+    const list=$('#list'); list.innerHTML='';
+    if(!j.notes||!j.notes.length){ list.innerHTML='<div style="color:#7f93b8">还没有写，等她第一条吧。</div>'; return; }
+    for(const n of j.notes){
+      const d=new Date((n.t||0)*1000);
+      const c=document.createElement('div'); c.className='card';
+      const meta=document.createElement('div'); meta.className='meta';
+      const tg=document.createElement('span'); tg.className='tag '+(tagName[n.tag]?'':'manual');
+      tg.textContent=tagName[n.tag]||('manual');
+      meta.appendChild(tg);
+      meta.appendChild(document.createTextNode(d.toLocaleString('zh-CN')+(n.mood?(' · '+n.mood):'')));
+      const tx=document.createElement('div'); tx.className='text'; tx.textContent=n.text||'';
+      c.appendChild(meta); c.appendChild(tx);
+      list.appendChild(c);
+    }
+  }catch(e){ $('#list').innerHTML='连不上 8003'; }
+}
+$('#add').onclick=async()=>{
+  const t=$('#newtext').value.trim(); if(!t) return;
+  $('#add').disabled=true;
+  try{
+    const r=await fetch('/api/her-notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,tag:'manual'})});
+    const j=await r.json();
+    if(!j.ok){ alert('没写进去：'+(j.error||'')); return; }
+    $('#newtext').value=''; load();
+  }catch(e){ alert('请求失败'); }
+  $('#add').disabled=false;
+};
+load();
+</script></body></html>

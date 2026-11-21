@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_edge_tts
+display_name: 伴侣 Edge 语音
+desc: 用微软 Edge TTS 给伴侣发 QQ 语音；只在你要语音时合成，免费、低延迟
+help: 保留「发语音」「用语音说」「开好嗓」等触发词；音色可在服务商配置里改
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

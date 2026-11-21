@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_memfix
+display_name: 伴侣记忆纠错
+desc: 你说「纠正 关键词 => 正确内容」时，改掉她记错的那条记忆，旧正文留档、账本登记作废
+help: 纠正 牛肉面 => 中午吃的是黄焖鸡；只想看候选就发「纠正 牛肉面」
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

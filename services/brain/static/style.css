@@ -1,0 +1,54 @@
+/* 记忆星图 · 骨架样式 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #060a14;
+  color: #d8e4f4;
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+  overflow: hidden;
+}
+
+#sky { position: fixed; inset: 0; display: block; cursor: grab; }
+#sky:active { cursor: grabbing; }
+
+#hud {
+  position: fixed;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  color: #7c8fa8;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+#legend {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #7c8fa8;
+}
+
+#legend .item { display: flex; align-items: center; gap: 6px; }
+#legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+#tip {
+  position: fixed;
+  max-width: 260px;
+  background: rgba(16, 26, 43, .95);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#tip .topic { color: #7c8fa8; font-size: 12px; margin-top: 4px; }

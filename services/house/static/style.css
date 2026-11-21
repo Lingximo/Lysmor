@@ -1,0 +1,42 @@
+/* 大平层 · 骨架样式 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #0a0f1c;
+  color: #d8e4f4;
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+  overflow: hidden;
+}
+
+#room { position: fixed; inset: 0; display: block; cursor: grab; }
+#room:active { cursor: grabbing; }
+
+#hud {
+  position: fixed;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  pointer-events: none;
+}
+
+#title { font-size: 16px; font-weight: 600; }
+#hint { color: #7c8fa8; font-size: 13px; }
+
+#tip {
+  position: fixed;
+  max-width: 240px;
+  background: rgba(16, 26, 43, .95);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#tip .note { color: #7c8fa8; font-size: 12px; margin-top: 4px; }

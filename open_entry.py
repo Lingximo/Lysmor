@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+"""打开入口（日常用）
+
+双击 打开入口.cmd 即可：
+  1. 还没配置过 → 自动打开"配置向导"页面
+  2. 已配置 → 启动核心服务（已在跑的自动跳过），然后打开 Hub 总入口页
+
+测试用：python open_entry.py --no-browser（只起服务不开浏览器）
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import webbrowser
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+CODE = os.path.join(ROOT, "code")
+CFG_PATH = os.path.join(ROOT, "config.json")
+
+# (显示名, 脚本相对路径, 端口配置键)
+MODULES = [
+    ("Hub", "hub/server.py", "hub"),
+    ("网页聊天", "webchat/server.py", "chat"),
+    ("生命面板", "lifeviz/server.py", "life"),
+    ("记忆星图", "brainviz/server.py", "brain"),
+]
+
+
+def load_cfg():
+    try:
+        with open(CFG_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def listening(port):
+    s = socket.socket()
+    s.settimeout(0.3)
+    try:
+        s.connect(("127.0.0.1", port))
+        s.close()
+        return True
+    except Exception:
+        return False
+
+
+def start(script, port):
+    if listening(port):
+        return False
+    DETACHED = 0x00000008 | 0x08000000          # DETACHED_PROCESS | CREATE_NO_WINDOW（不弹黑窗口）
+    subprocess.Popen([sys.executable, script],
+                     cwd=os.path.dirname(script),
+                     creationflags=DETACHED,
+                     close_fds=True,
+                     stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL)
+    return True
+
+
+def open_url(url):
+    if "--no-browser" not in sys.argv:
+        webbrowser.open(url)
+
+
+def run_and_print_check():
+    try:
+        import configure
+        fails = warns = 0
+        for c in configure.check_setup():
+            if c["level"] == "fail":
+                fails += 1
+            elif c["level"] == "warn":
+                warns += 1
+        print("体检：FAIL=%d WARN=%d" % (fails, warns))
+    except Exception as exc:  # noqa: BLE001
+        print("体检跑不了：%s" % exc)
+
+
+def main():
+    if sys.stdout is not None:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    cfg = load_cfg()
+    if not cfg:
+        print("还没配置过 → 自动打开配置向导。")
+        if not listening(8090):
+            start(os.path.join(ROOT, "setup", "server.py"), 8090)
+        time.sleep(1.0)
+        open_url("http://127.0.0.1:8090/?auto=check")
+        return 0
+
+    ports = cfg.get("ports") or {}
+    started = []
+    for name, rel, key in MODULES:
+        script = os.path.join(CODE, rel)
+        if not os.path.exists(script):
+            continue
+        port = int(ports.get(key) or 8000)
+        if start(script, port):
+            started.append(name)
+            time.sleep(0.8)
+
+    # 大平层需要 plan.json（新用户可先放一个通用布局）
+    house_script = os.path.join(CODE, "houseviz", "server.py")
+    if os.path.exists(house_script) and os.path.exists(os.path.join(CODE, "houseviz", "plan.json")):
+        port = int(ports.get("house") or 8007)
+        if start(house_script, port):
+            started.append("大平层")
+
+    print("本次启动：%s" % ("、".join(started) if started else "服务都已在运行"))
+    run_and_print_check()
+
+    # 打开"体检页"：全绿自动进总入口，有黄/红灯就停在体检页提示怎么修
+    if not listening(8090):
+        start(os.path.join(ROOT, "setup", "server.py"), 8090)
+    time.sleep(1.0)
+    open_url("http://127.0.0.1:8090/?auto=check")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

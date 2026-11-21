@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#070b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TA">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.png">
+<title>TA</title>
+<style>
+  :root{
+    --bg1:#070b14; --bg2:#0b1220; --line:rgba(120,170,255,.12);
+    --me:#7dc4ff; --her:#cfe3ff; --dim:#7f93b8;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100dvh;margin:0;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  body{
+    background:
+      radial-gradient(900px 600px at 50% -10%, rgba(70,110,220,.18), transparent 70%),
+      radial-gradient(700px 500px at 90% 110%, rgba(120,80,220,.12), transparent 70%),
+      linear-gradient(180deg,var(--bg2),var(--bg1));
+    color:#e6eefc;
+    font: 15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    display:flex; align-items:center; gap:12px;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    border-bottom:1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+  header img{width:38px;height:38px;border-radius:50%;object-fit:cover;
+    box-shadow:0 0 0 1px rgba(140,190,255,.25), 0 0 18px rgba(90,140,255,.25)}
+  header .who{display:flex;flex-direction:column;line-height:1.25}
+  header .who b{font-weight:600;font-size:15px;letter-spacing:.02em}
+  header .who span{font-size:11.5px;color:var(--dim)}
+  header .dot{margin-left:auto;width:7px;height:7px;border-radius:50%;
+    background:#3fbf7f;box-shadow:0 0 8px #3fbf7f;opacity:.75}
+  header .dot.off{background:#b4563f;box-shadow:0 0 8px #b4563f}
+
+  #log{flex:1;overflow-y:auto;padding:18px 14px 10px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+  .row{display:flex;margin:0 0 14px;gap:10px;align-items:flex-end}
+  .row.me{justify-content:flex-end}
+  .bubble{
+    max-width:min(78%,620px);padding:10px 14px;border-radius:16px;
+    white-space:pre-wrap;word-break:break-word;
+    border:1px solid rgba(140,180,255,.10);
+  }
+  .proactive .bubble{opacity:.92;border:1px dashed rgba(120,200,255,.35)}
+.proactive .bubble::after{content:' · 主动';font-size:10px;opacity:.55;margin-left:6px}
+.me .bubble{background:linear-gradient(135deg,rgba(70,140,255,.22),rgba(40,90,190,.18));
+    border-bottom-right-radius:5px}
+  .her .bubble{background:rgba(150,190,255,.07);border-bottom-left-radius:5px}
+  .her .face{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:0 0 auto;
+    opacity:.9;box-shadow:0 0 0 1px rgba(140,190,255,.18)}
+  .bubble img.sticker{max-width:190px;max-height:190px;border-radius:10px;margin-top:6px;display:block;border:1px solid rgba(140,180,255,.14)}
+  .think{display:inline-flex;gap:4px;align-items:center;height:18px}
+  .think i{width:5px;height:5px;border-radius:50%;background:var(--her);opacity:.35;
+    animation:blink 1.2s infinite}
+  .think i:nth-child(2){animation-delay:.18s}
+  .think i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,80%,100%{opacity:.2;transform:translateY(0)}
+    40%{opacity:.9;transform:translateY(-2px)}}
+
+  footer{padding:10px 12px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+  .bar{display:flex;gap:10px;align-items:flex-end;background:rgba(140,180,255,.06);
+    border:1px solid rgba(140,180,255,.12);border-radius:16px;padding:8px 10px}
+  textarea{
+    flex:1;resize:none;border:0;outline:0;background:transparent;color:#e6eefc;
+    font:inherit;font-size:16px;max-height:120px;min-height:24px;padding:6px 2px;
+  }
+  textarea::placeholder{color:#5f7396}
+  button{
+    border:0;border-radius:12px;padding:10px 18px;font:inherit;font-size:16px;font-weight:600;
+    color:#04131c;background:linear-gradient(135deg,#7dc4ff,#4f8cff);cursor:pointer;
+  }
+  button:disabled{opacity:.45;cursor:default}
+  .tip{padding:0 4px 6px;color:#5f7396;font-size:11.5px}
+  .pick{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;
+    background:rgba(140,180,255,.08);border:1px solid rgba(140,180,255,.14);cursor:pointer;font-size:16px;
+    color:#9fc3ff;flex:0 0 auto;user-select:none}
+  .pick:hover{background:rgba(140,180,255,.16)}
+  #preview{display:none;padding:0 4px 8px}
+  #preview img{max-height:96px;border-radius:10px;border:1px solid rgba(140,180,255,.18)}
+  #preview .x{margin-left:8px;color:#8fa6b8;cursor:pointer;font-size:12px;vertical-align:top}
+  .vox {
+    background: none;
+    border: 1px solid rgba(255,255,255,.18);
+    color: #cfd8e3;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .vox.off { opacity: .45; }
+</style>
+</head>
+<body>
+<div id="qqbar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:99;
+  background:#5a1d1d;color:#ffd7d7;font-size:13px;padding:8px 12px;text-align:center;
+  border-bottom:1px solid #7a2a2a">
+  QQ 掉线了 —— 她的主动消息现在送不出去
+  <a href="http://127.0.0.1:8008/" style="color:#ffb4b4;margin-left:8px">去扫码</a>
+</div>
+<header>
+  <img src="/avatar.png" alt="" onerror="this.style.display='none'">
+  <div class="who"><b>TA</b><span>网页 · 她本人</span></div>
+  <button id="vox" class="vox" title="语音播报">🔊</button>
+  <a href="/doodle" title="陪玩时画的简笔画" style="margin-left:auto;margin-right:10px;color:#8fb8ff;text-decoration:none;font-size:13px;border:1px solid rgba(140,180,255,.25);padding:4px 10px;border-radius:10px">简笔画</a>
+  <div class="dot" id="dot" title="连接"></div>
+</header>
+
+<div id="gate" style="display:none;position:fixed;inset:0;background:#070b14;z-index:9;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px">
+  <div style="color:#cfe3ff;font-size:15px">输入一次口令（存在手机里，以后不用再输）</div>
+  <input id="gateInput" placeholder="口令" style="font-size:16px;padding:10px 14px;border-radius:12px;border:1px solid rgba(140,180,255,.25);background:rgba(140,180,255,.08);color:#e6eefc;width:min(320px,80vw);text-align:center">
+  <button id="gateBtn">进入</button>
+</div>
+
+<div id="log"></div>
+
+<footer>
+  <div id="preview"><img id="pv" alt=""><span class="x" id="rm">移除</span></div>
+  <div class="bar">
+    <label class="pick" title="发一张图给她">🖼<input id="file" type="file" accept="image/*" hidden></label>
+    <textarea id="input" rows="1" placeholder="跟她说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+    <button id="send">发送</button>
+  </div>
+  <div class="tip">走的是她真正的大脑：记忆、生理、语气都在；不走 QQ，不碰账号。</div>
+</footer>
+
+<script>
+(() => {
+  let GATE = new URLSearchParams(location.search).get('t') || localStorage.getItem('companion_gate') || '';
+  const gateBox = document.getElementById('gate');
+  const gateInput = document.getElementById('gateInput');
+  const gateBtn = document.getElementById('gateBtn');
+  function askGate() {
+    gateBox.style.display = 'flex';
+    gateInput.focus();
+  }
+  gateBtn.onclick = () => {
+    const v = gateInput.value.trim();
+    if (!v) return;
+    GATE = v;
+    localStorage.setItem('companion_gate', v);
+    gateBox.style.display = 'none';
+  };
+  gateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') gateBtn.click(); });
+  if (GATE) localStorage.setItem('companion_gate', GATE);
+  const log = document.getElementById('log');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+  const dot = document.getElementById('dot');
+  let busy = false;
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function addMe(text) {
+    const row = el('div', 'row me');
+    row.appendChild(el('div', 'bubble', text));
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function addHer() {
+    const row = el('div', 'row her');
+    const face = el('img', 'face');
+    face.src = '/avatar.png';
+    face.onerror = () => face.remove();
+    const bubble = el('div', 'bubble');
+    const think = el('span', 'think');
+    think.innerHTML = '<i></i><i></i><i></i>';
+    bubble.appendChild(think);
+    row.appendChild(face);
+    row.appendChild(bubble);
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+    return bubble;
+  }
+
+  let pendingImage = '';
+
+  const fileInput = document.getElementById('file');
+  const preview = document.getElementById('preview');
+  const pv = document.getElementById('pv');
+  const rm = document.getElementById('rm');
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    if (f.size > 8 * 1024 * 1024) { alert('图太大了（最多 8MB）'); fileInput.value = ''; return; }
+    const fr = new FileReader();
+    fr.onload = () => {
+      pendingImage = String(fr.result || '');
+      pv.src = pendingImage;
+      preview.style.display = 'block';
+      input.focus();
+    };
+    fr.readAsDataURL(f);
+    fileInput.value = '';
+  });
+  rm.addEventListener('click', () => {
+    pendingImage = ''; preview.style.display = 'none'; pv.src = '';
+  });
+
+  let lastPushSeq = 0;
+async function pollPush(){
+  try{
+    const r = await fetch('/api/push?since=' + lastPushSeq + '&t=' + encodeURIComponent(GATE));
+    if(!r.ok) return;
+    const d = await r.json();
+    (d.items || []).forEach(it => {
+      const b = addHer();
+      b.textContent = it.text;
+      const row = b.parentElement;
+      if(row){ row.classList.add('proactive'); }
+    });
+    if(d.last) lastPushSeq = d.last;
+  }catch(e){}
+}
+/* 2026-11-19 部署者要求：网页不再展示她的主动推送 */
+// setInterval(pollPush, 4000);
+// pollPush();
+
+async function talk(text, image) {
+    busy = true; send.disabled = true;
+    addMe(text || (image ? '（发了一张图）' : ''));
+    const bubble = addHer();
+    let out = '';
+    try {
+      const r = await fetch('/api/send?t=' + encodeURIComponent(GATE), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text, image_b64: image || ""})
+      });
+      if (r.status === 403) { askGate(); throw new Error('口令不对'); }
+      if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const {value, done} = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, {stream: true});
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          let ev;
+          try { ev = JSON.parse(line); } catch { continue; }
+          if (ev.t) {
+            if (!out) bubble.textContent = '';
+            out += ev.t;
+            const span = document.createElement('span');
+            span.textContent = ev.t;
+            bubble.appendChild(span);
+            log.scrollTop = log.scrollHeight;
+          }
+          if (ev.img) {
+            if (!out && !bubble.querySelector('img')) bubble.textContent = '';
+            const im = document.createElement('img');
+            im.className = 'sticker';
+            im.loading = 'lazy';
+            im.src = '/img/' + encodeURIComponent(ev.img);
+            bubble.appendChild(im);
+            log.scrollTop = log.scrollHeight;
+          }
+          if (ev.art) {
+            // 她画的成品：大一点显示，点一下能看原图
+            const im2 = document.createElement('img');
+            im2.className = 'artwork';
+            im2.loading = 'lazy';
+            im2.src = ev.art;
+            im2.style.maxWidth = '78%';
+            im2.style.borderRadius = '12px';
+            im2.style.marginTop = '8px';
+            im2.style.display = 'block';
+            im2.onclick = () => window.open(ev.art, '_blank');
+            bubble.appendChild(im2);
+            log.scrollTop = log.scrollHeight;
+          }
+          if (ev.error) {
+            bubble.textContent = out || ('（出错了：' + ev.error + '）');
+          }
+          if (ev.done) {
+            if (!out && ev.text) { out = ev.text; bubble.textContent = out; }
+          }
+          if (ev.voice) {
+            const lastVoice = ev.voice;
+            const btn = document.createElement('button');
+            btn.className = 'vox';
+            btn.textContent = '🔊';
+            btn.title = '重听';
+            btn.onclick = () => playVoice(ev.voice, bubble);
+            bubble.appendChild(btn);
+            if (voxOn) playVoice(ev.voice, bubble);
+          }
+        }
+      }
+      if (!out) bubble.textContent = '（她没说话……）';
+      dot.classList.remove('off');
+    } catch (e) {
+      bubble.textContent = '（连不上她：' + e.message + '）';
+      dot.classList.add('off');
+    } finally {
+      busy = false; send.disabled = false; input.focus();
+      log.scrollTop = log.scrollHeight;
+    }
+  }
+
+  let voxOn = localStorage.getItem('vox') !== '0';
+  const voxBtn = document.getElementById('vox');
+  function paintVox() {
+    voxBtn.classList.toggle('off', !voxOn);
+    voxBtn.title = voxOn ? '语音播报：开' : '语音播报：关';
+  }
+  voxBtn.onclick = () => {
+    voxOn = !voxOn;
+    localStorage.setItem('vox', voxOn ? '1' : '0');
+    paintVox();
+  };
+  paintVox();
+
+  // 2026-11-09 修"听不见"：
+  // 她的回复要 10 秒以上才合成完，那时浏览器的"用户手势"早就过期了，
+  // 新 new Audio().play() 会被自动播放策略直接拒掉（旧代码 catch 掉，静默失败）。
+  // 做法：整页共用一个 audio 元素，第一次点击/按键时先用静音片段把它"解锁"，
+  // 之后无论多久才来的语音都能直接播；真播不出来再给一个明显的重播按钮。
+  const voiceAudio = new Audio();
+  voiceAudio.setAttribute('playsinline', '');
+  voiceAudio.preload = 'auto';
+  let voiceUnlocked = false;
+
+  function unlockVoice() {
+    if (voiceUnlocked) return;
+    voiceUnlocked = true;
+    try {
+      // 44 字节静音 wav；在用户手势里播一次，这个元素就获得播放许可
+      voiceAudio.muted = true;
+      voiceAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
+      const pr = voiceAudio.play();
+      if (pr && pr.then) {
+        pr.then(() => {
+          try { voiceAudio.pause(); voiceAudio.currentTime = 0; } catch (e) {}
+          voiceAudio.muted = false;
+        }).catch(() => { voiceAudio.muted = false; });
+      } else {
+        voiceAudio.muted = false;
+      }
+    } catch (e) { voiceAudio.muted = false; }
+  }
+  document.addEventListener('pointerdown', unlockVoice, { once: true });
+  document.addEventListener('keydown', unlockVoice, { once: true });
+  document.addEventListener('touchstart', unlockVoice, { once: true });
+
+  function playVoice(b64, bubbleEl) {
+    try {
+      voiceAudio.muted = false;
+      voiceAudio.pause();
+      voiceAudio.src = 'data:audio/mpeg;base64,' + b64;
+      const pr = voiceAudio.play();
+      if (pr && pr.catch) {
+        pr.catch(() => {
+          // 还是被拦：给一个必须手点的按钮，别让她"静悄悄"
+          try {
+            const b = document.createElement('button');
+            b.className = 'vox';
+            b.textContent = '▶ 点这里听';
+            b.onclick = () => {
+              voiceUnlocked = true;
+              voiceAudio.src = 'data:audio/mpeg;base64,' + b64;
+              voiceAudio.play().catch(() => {});
+              b.remove();
+            };
+            (bubbleEl || document.body).appendChild(b);
+          } catch (e) {}
+        });
+      }
+    } catch (e) { /* 真播不了就算了 */ }
+  }
+
+  function submit() {
+    const text = input.value.trim();
+    if ((!text && !pendingImage) || busy) return;
+    const image = pendingImage;
+    input.value = ''; input.style.height = 'auto';
+    pendingImage = ''; preview.style.display = 'none'; pv.src = '';
+    talk(text, image);
+  }
+
+  send.onclick = submit;
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+  });
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(120, input.scrollHeight) + 'px';
+  });
+  input.focus();
+  gateBox.style.display = "none";
+})();
+
+  // 2026-11-07：断电重启后 QQ 会掉线，她的主动消息静默失败——这里给个提示条
+  async function checkQQ() {
+    try {
+      const r = await fetch('/api/qq', { cache: 'no-store' });
+      const j = await r.json();
+      const bar = document.getElementById('qqbar');
+      if (bar) bar.style.display = j.online ? 'none' : 'block';
+    } catch (e) { /* 服务不可达时不动横幅 */ }
+  }
+  checkQQ(); setInterval(checkQQ, 30000);
+</script>
+</body>
+</html>

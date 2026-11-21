@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_video_bridge
+display_name: 伴侣视频/QQ 上下文桥
+desc: 让 QQ 和TA视频通话共享最近几句话；视频结束后按 QQ 同一套记忆逻辑写入长期记忆
+help: 自动运行；视频聊完回 QQ，她还能接上刚才的话题
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

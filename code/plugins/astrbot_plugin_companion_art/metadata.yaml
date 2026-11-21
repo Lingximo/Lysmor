@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_art
+display_name: 伴侣画画
+desc: 让TA用手绘风画一张画：成品进画廊，QQ 发笔画过程和成品；会看心情同意，平静时可能拒绝。
+help: 跟她说「画一张窗边的TA」「给我画一张画」，也可以在私聊里用 /画 窗边的TA
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

@@ -1,0 +1,17 @@
+{
+  "os": "Windows 10/11 x64",
+  "python": "3.12.x",
+  "bot_framework": "",
+  "bot_launcher": "C:\\你的机器人框架",
+  "bot_instance": "",
+  "im": "QQ",
+  "im_version": "",
+  "im_path": "D:\\你的IM\\IM.exe",
+  "napcat_app": "D:\\你的NapCat\\app",
+  "ollama_models": ["qwen3-vl:4b", "bge-m3"],
+  "ffmpeg": "7.x",
+  "root": "D:\\你的数据目录",
+  "startup": "C:\\你的用户\\CompanionStartup",
+  "memory_docs": 0,
+  "plugins": 0
+}

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TA · 穿戴预览</title>
+<style>
+  :root{
+    --green:#8dffb0;      /* 模拟 Rokid 的绿色单色屏 */
+    --dim:rgba(141,255,176,.45);
+    --bg:#000;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0b0d12;color:#cfe3ff;
+    font:14px/1.5 -apple-system,"Microsoft YaHei",sans-serif}
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px}
+  .hud{position:relative;width:480px;height:640px;background:#05070a;
+    border:1px solid #1d2430;border-radius:14px;overflow:hidden}
+  /* 中央的"她的半身像"占位：以后换成 Live2D canvas 或 PNG 序列 */
+  #bust{position:absolute;right:12px;top:12px;width:180px;height:260px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px dashed rgba(141,255,176,.25);border-radius:12px;
+    color:var(--dim);font-size:12px;text-align:center;
+    animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  /* 字幕：底部两行，绿色单色，模拟波导观感 */
+  #subs{position:absolute;left:16px;right:16px;bottom:28px;
+    color:var(--green);text-shadow:0 0 6px rgba(141,255,176,.35);
+    font-size:20px;line-height:1.55;letter-spacing:.5px;
+    max-height:52%;overflow:hidden}
+  #subs .you{opacity:.55;font-size:16px;margin-bottom:6px}
+  .panel{width:480px;display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=text]{flex:1;padding:9px 12px;border-radius:10px;
+    border:1px solid #24303f;background:#0f141c;color:#dbe8ff;font-size:14px}
+  button{padding:9px 14px;border-radius:10px;border:0;background:#1b2740;color:#cfe3ff;
+    font-size:14px;cursor:pointer}
+  button:active{transform:scale(.98)}
+  .stat{font-size:12px;color:#6f84a3;display:flex;gap:14px;flex-wrap:wrap}
+  .ok{color:#5ee6a0}.bad{color:#ff8f7a}
+  .hint{font-size:12px;color:#5f7396;width:480px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud">
+    <div id="bust">她的半身像<br>（以后换 Live2D）</div>
+    <div id="subs"><div class="you" id="you"></div><div id="her">等你说话…</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <input id="wsurl" value="ws://127.0.0.1:8014/ws">
+      <button id="conn">连接</button>
+    </div>
+    <div class="row">
+      <input id="say" placeholder="调试：直接打字发给她">
+      <button id="send">发送</button>
+      <button id="mic">🎤 麦克风</button>
+    </div>
+    <div class="stat">
+      <span id="state">未连接</span>
+      <span id="lat">延迟 —</span>
+      <span id="asrms">ASR —</span>
+      <span>视场 480×640 · 单色绿模拟</span>
+    </div>
+  </div>
+  <div class="hint">
+    这是"眼镜里看到的样子"的模拟：右上角她的半身像、底部两行字幕、其余透明。
+    真机上黑色区域是透光的，你还能看见路。
+  </div>
+</div>
+
+<script>
+let ws = null, stream = null, ctx = null, node = null;
+
+const $ = (id) => document.getElementById(id);
+const setState = (t, cls) => { const e=$('state'); e.textContent=t; e.className=cls||''; };
+
+function connect() {
+  const url = $('wsurl').value.trim();
+  try { ws = new WebSocket(url); } catch(e){ setState('地址不对','bad'); return; }
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => {
+    setState('已连接','ok');
+    ws.send(JSON.stringify({type:'hello', device:'preview'}));
+  };
+  ws.onclose = () => setState('已断开','bad');
+  ws.onerror = () => setState('连接失败','bad');
+  ws.onmessage = (ev) => {
+    if (typeof ev.data !== 'string') return;
+    let m; try { m = JSON.parse(ev.data); } catch(e){ return; }
+    if (m.type === 'heard') {
+      $('you').textContent = '你：' + m.text;
+      $('asrms').textContent = 'ASR ' + m.asr_ms + 'ms';
+    } else if (m.type === 'subtitle') {
+      $('her').textContent = m.text;
+      if (m.total_ms) $('lat').textContent = '一轮 ' + m.total_ms + 'ms';
+    } else if (m.type === 'caps') {
+      setState('已连接 · ' + (m.asr||''),'ok');
+    } else if (m.type === 'error') {
+      $('her').textContent = '错误：' + m.msg;
+    }
+  };
+}
+
+async function startMic() {
+  if (!ws || ws.readyState !== 1) { setState('先连接','bad'); return; }
+  if (stream) return;
+  stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
+  const ac = new (window.AudioContext || window.webkitAudioContext)({sampleRate:16000});
+  const src = ac.createMediaStreamSource(stream);
+  // 用 AudioWorklet 拿原始 PCM，降采样到 16k 由 AudioContext 处理
+  await ac.audioWorklet.addModule(URL.createObjectURL(new Blob([`
+    class P extends AudioWorkletProcessor {
+      constructor(){ super(); this.buf=new Float32Array(320); this.i=0; }
+      process(inputs){
+        const ch = inputs[0][0]; if(!ch) return true;
+        for(let k=0;k<ch.length;k++){
+          this.buf[this.i++]=ch[k];
+          if(this.i>=320){ this.port.postMessage(this.buf.slice(0)); this.i=0; }
+        }
+        return true;
+      }
+    }
+    registerProcessor('pcm', P);
+  `], {type:'application/javascript'})));
+  node = new AudioWorkletNode(ac, 'pcm');
+  node.port.onmessage = (e) => {
+    if (!ws || ws.readyState !== 1) return;
+    const f = e.data;
+    const pcm = new Int16Array(f.length);
+    for (let i=0;i<f.length;i++){ const s=Math.max(-1,Math.min(1,f[i])); pcm[i]=s*32767; }
+    ws.send(pcm.buffer);
+  };
+  src.connect(node);
+  node.connect(ac.destination);
+  setState('麦克风已开','ok');
+}
+
+$('conn').onclick = connect;
+$('mic').onclick = startMic;
+$('send').onclick = () => {
+  const t = $('say').value.trim(); if (!t || !ws) return;
+  ws.send(JSON.stringify({type:'text', text:t}));
+  $('you').textContent = '你：' + t;
+  $('say').value = '';
+};
+$('say').addEventListener('keydown', e => { if (e.key === 'Enter') $('send').click(); });
+</script>
+</body>
+</html>

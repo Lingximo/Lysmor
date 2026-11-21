@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>表情预览</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b1220;overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh}
+  #tip{position:fixed;left:12px;top:10px;color:#9fb3c8;font:14px "Microsoft YaHei",sans-serif}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<canvas id="live2d"></canvas>
+<script src="/static/live2d/lib/live2dcubismcore.min.js"></script>
+<script src="/static/live2d/lib/pixi.min.js"></script>
+<script src="/static/live2d/lib/index.min.js"></script>
+<script src="/static/live2d/lib/cubism4.min.js"></script>
+<script src="/static/live2d/live2d.js?v=22"></script>
+<script>
+  const expr = new URLSearchParams(location.search).get('expr') || '';
+  document.getElementById('tip').textContent = expr;
+  function apply(){
+    try { window.setExpression && window.setExpression(expr); } catch(e){}
+  }
+  // 模型加载需要几秒；期间不断尝试，加载好之后定期补（参数每帧会被覆盖）
+  const t = setInterval(apply, 300);
+  setTimeout(() => clearInterval(t), 20000);
+  setInterval(apply, 500);
+</script>
+</body>
+</html>

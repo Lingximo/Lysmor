@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一键配置向导</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="head-text">
+      <h1>🛠 一键配置向导</h1>
+      <p>第一步填账号 → 第二步点自动配置 → 完成。软件和设置全自动，你只管账号。</p>
+    </div>
+    <img class="ds-logo" src="deepseek-logo.ico" alt="DeepSeek" title="Powered by DeepSeek">
+  </header>
+
+  <main class="wrap">
+    <div class="form-col">
+
+      <!-- A. 账号清单（需要你自己注册/准备） -->
+      <section class="card">
+        <h2>📝 账号清单（需要你自己注册，填进来就行）</h2>
+        <div class="accounts">
+          <label>鱼的 QQ 号 <input id="fish_qq" placeholder="她登录用的 QQ（扫码时用）"></label>
+          <label>你的 QQ 号 <input id="user_qq" placeholder="她靠这个认出是你"></label>
+          <label>DeepSeek API Key <input id="api_key" placeholder="sk-…（platform.deepseek.com 注册+充值+创建）"></label>
+        </div>
+        <p class="tiny">网盘/蒲公英/证书等可选账号见「⚙️ 详细设置」与 docs/登入清单.md。</p>
+      </section>
+
+      <!-- B. 一键自动配置 -->
+      <section class="card hero">
+        <h2>⚡ 一键自动配置</h2>
+        <p class="tiny">自动装机（Python/Ollama/ffmpeg/模型）+ 自动探测 AstrBot + 自动填目录/端口/口令 + 把上面的账号匹配进去。</p>
+        <div class="btn-row">
+          <button id="autoconfig" class="apply">⚡ 开始自动配置</button>
+          <button id="envsetup" class="check">🔧 自动装机</button>
+        </div>
+        <div id="env_result" hidden></div>
+        <div id="quick_result" hidden></div>
+      </section>
+
+      <!-- C. 声纹 + 人脸（可选） -->
+      <section class="card">
+        <h2>🔊📷 声纹与脸（可选，让她认得你的声音和样子）</h2>
+        <div class="enroll-row">
+          <div class="enroll-col">
+            <b class="tiny">声纹：录 5 段你的话（每段 3~5 秒）</b>
+            <div id="voice_slots"></div>
+          </div>
+          <div class="enroll-col">
+            <b class="tiny">人脸：5 张照片（上 / 下 / 左 / 右 / 正）</b>
+            <div id="face_slots"></div>
+          </div>
+        </div>
+        <p class="tiny">样本只存在你本地数据目录，不进仓库；识别代码在你自己的机器人系统里。</p>
+      </section>
+
+      <!-- D. 素材导入（可选） -->
+      <section class="card">
+        <h2>🎨 素材导入（可选：导入你自己的 Live2D / 表情包 / 背景 / 桌宠形象）</h2>
+        <div class="import-row">
+          <span class="imp-label">Live2D 模型</span>
+          <input type="file" id="imp_live2d" webkitdirectory multiple>
+          <button class="mini-btn" data-imp="live2d" type="button">导入</button>
+          <span class="imp-st" id="st_live2d"></span>
+        </div>
+        <div class="import-row">
+          <span class="imp-label">表情包</span>
+          <input type="file" id="imp_stickers" multiple accept="image/*">
+          <button class="mini-btn" data-imp="stickers" type="button">导入</button>
+          <span class="imp-st" id="st_stickers"></span>
+        </div>
+        <div class="import-row">
+          <span class="imp-label">视频通话背景</span>
+          <input type="file" id="imp_background" multiple accept="image/*,video/*">
+          <button class="mini-btn" data-imp="background" type="button">导入</button>
+          <span class="imp-st" id="st_background"></span>
+        </div>
+        <div class="import-row">
+          <span class="imp-label">桌宠形象</span>
+          <input type="file" id="imp_pet" webkitdirectory multiple>
+          <button class="mini-btn" data-imp="pet" type="button">导入</button>
+          <span class="imp-st" id="st_pet"></span>
+        </div>
+        <p class="tiny">素材只存在本地数据目录；不要导入没有授权的第三方素材。</p>
+      </section>
+
+      <!-- 详细设置折叠 -->
+      <button id="adv-toggle" class="mini-btn wide" type="button">⚙️ 详细设置（手动配置，点开）</button>
+      <div id="advanced" hidden>
+        <section class="card">
+          <h2>① 目录</h2>
+          <label>数据目录 <input id="data_dir" placeholder="记忆/代码/状态放这里"></label>
+          <label>用户目录 <input id="user_dir"></label>
+        </section>
+        <section class="card">
+          <h2>② 身份</h2>
+          <label>机器人实例 UUID（自动探测到的话不用动） <input id="bot_instance"></label>
+          <label>机器人面板端口 <input id="bot_panel" type="number"></label>
+          <button id="open-panel" class="mini-btn" type="button">🧠 打开 AstrBot 管理面板</button>
+          <p class="tiny">在管理面板里：模型服务商选 DeepSeek → 填上面账号清单里的 Key → 保存。</p>
+        </section>
+        <section class="card">
+          <h2>③ 大脑（DeepSeek API）</h2>
+          <label>API 地址 <input id="base_url"></label>
+          <label>模型
+            <select id="model">
+              <option value="deepseek-chat">deepseek-chat（日常，快）</option>
+              <option value="deepseek-reasoner">deepseek-reasoner（深度思考，慢）</option>
+            </select>
+          </label>
+        </section>
+        <section class="card">
+          <h2>④ 口令</h2>
+          <div class="row">
+            <input id="gate_token" placeholder="留空 = 自动生成">
+            <button id="gen" type="button">🎲 自动生成</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2>⑤ 端口</h2>
+          <div id="ports" class="ports"></div>
+        </section>
+        <div class="btn-row">
+          <button id="apply" class="apply">🚀 一键应用</button>
+          <button id="check" class="check">🔍 检查配置</button>
+        </div>
+        <section id="result" hidden></section>
+      </div>
+
+      <section id="checkresult" hidden></section>
+    </div>
+
+    <aside class="tips">
+      <h2>💬 说人话版讲解</h2>
+      <div class="tip"><h3>📝 账号清单</h3><p>要"注册"的只有这些：鱼的 QQ、你的 QQ、DeepSeek Key（平台注册+充一点点钱）。填进去，脚本自动匹配。</p></div>
+      <div class="tip"><h3>⚡ 自动配置</h3><p>点一下：软件自动装（缺什么装什么）、AstrBot 自动找、目录/端口/口令自动填、账号自动接好。</p></div>
+      <div class="tip"><h3>🔊📷 声纹与脸</h3><p>想让她"听出是你、认出是你"，就录 5 句话、拍 5 张脸（上/下/左/右/正）。可选，先跳过也行。</p></div>
+      <div class="tip"><h3>🔧 自动装机</h3><p>只装软件和模型（Python/Ollama/ffmpeg + 2 个模型），不要账号。装完再点自动配置。</p></div>
+      <div class="tip mini">⏱ 全程 30~40 分钟（大头是模型下载）。之后每天双击图标就行。</div>
+    </aside>
+  </main>
+
+<script src="app.js"></script>
+</body>
+</html>

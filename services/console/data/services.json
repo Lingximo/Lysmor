@@ -1,0 +1,10 @@
+{
+  "_说明": "服务注册表：控制台按这份清单探活并跳转。url/health/page 按你的部署改。",
+  "services": [
+    {"id": "webchat", "name": "网页聊天", "url": "http://127.0.0.1:8001", "health": "/api/history", "page": "/"},
+    {"id": "life",    "name": "生命面板", "url": "http://127.0.0.1:8005", "health": "/api/state", "page": "/"},
+    {"id": "brain",   "name": "记忆星图", "url": "http://127.0.0.1:8006", "health": "/api/memories", "page": "/"},
+    {"id": "house",   "name": "大平层",   "url": "http://127.0.0.1:8007", "health": "/api/house", "page": "/"},
+    {"id": "gallery", "name": "画廊",     "url": "http://127.0.0.1:8002", "health": "/api/works", "page": "/"}
+  ]
+}

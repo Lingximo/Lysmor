@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_qzone_reply
+display_name: 伴侣空间回评
+desc: 你回复了TA的空间评论后，TA再回一条，并写入长期记忆
+help: 自动运行；需要 Qzone 插件已登录
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

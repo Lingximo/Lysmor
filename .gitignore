@@ -1,0 +1,41 @@
+﻿# ---- 绉佸瘑鏁版嵁锛氭案杩滀笉杩涗粨搴?----
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.tar.gz
+*.zip
+*.pem
+*.crt
+*.key
+*.p12
+*.p8
+cookies*
+*access_token*
+*secret*
+.env
+.env.*
+config.json
+config.local.json
+gate_token.txt
+
+# ---- 杩愯浜х墿 ----
+logs/
+tmp/
+temp/
+__pycache__/
+*.log
+*.pyc
+node_modules/
+state.json
+memories.json
+
+# ---- 渚嬪 ----
+!config.example.json
+!README.md
+!LICENSE
+plan.json
+code/state/
+!services/house/data/
+!services/house/data/plan.json
+

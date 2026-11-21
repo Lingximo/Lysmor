@@ -1,0 +1,498 @@
+﻿:root {
+  --bg: #02040a;
+  --cyan: #67e8f9;
+  --blue: #3b82f6;
+  --text: #e6f2ff;
+  --muted: #7f93b8;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(30, 70, 130, 0.36), transparent 38%),
+    radial-gradient(circle at 15% 80%, rgba(80, 30, 120, 0.18), transparent 45%),
+    var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 2; }
+#live2d { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1.6s ease;
+  transform: scale(1.03);
+}
+.bg-layer.show { opacity: 1; }
+.bg-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, transparent 0 28%, rgba(2, 4, 10, 0.18) 62%, rgba(2, 4, 10, 0.58) 100%),
+    linear-gradient(180deg, rgba(2, 4, 10, 0.62) 0%, transparent 26%, transparent 58%, rgba(2, 4, 10, 0.78) 100%);
+}
+
+
+.top {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; z-index: 4;
+  background: linear-gradient(180deg, rgba(2,4,10,.8), transparent);
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #9ffcff; box-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(103,232,249,.7);
+  animation: pulse 2.4s infinite;
+}
+.brand h1 { margin: 0; font-size: 22px; letter-spacing: 3px; font-weight: 500; }
+.brand p { margin: 4px 0 0; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.badge {
+  font-size: 11px; color: #9fdfff; border: 1px solid rgba(103,232,249,.25);
+  padding: 6px 10px; border-radius: 999px; background: rgba(8,20,38,.6);
+}
+
+.call { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.halo {
+  position: absolute; width: 46vmin; height: 46vmin; border-radius: 50%;
+  border: 1px solid rgba(103,232,249,.16);
+  box-shadow: 0 0 80px rgba(59,130,246,.18), inset 0 0 60px rgba(103,232,249,.06);
+  animation: breathe 4s ease-in-out infinite;
+}
+.captions {
+  position: absolute; bottom: 20vh; left: 50%; transform: translateX(-50%);
+  max-width: 76vw; text-align: center; font-size: 15px; line-height: 1.7;
+  color: #dff8ff; text-shadow: 0 2px 18px rgba(0,0,0,.9);
+  background: rgba(3,10,22,.45); border: 1px solid rgba(103,232,249,.12);
+  border-radius: 12px; padding: 8px 16px; backdrop-filter: blur(8px);
+  opacity: 0; transition: .25s;
+}
+.captions.show { opacity: 1; }
+
+.controls {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding: 14px 18px 18px;
+  background: linear-gradient(0deg, rgba(2,4,10,.96), rgba(2,4,10,.55), transparent);
+  z-index: 5;
+}
+.transcript {
+  max-width: 760px; max-height: 16vh; overflow-y: auto;
+  margin: 0 auto 10px; display: flex; flex-direction: column; gap: 5px;
+  scrollbar-width: thin;
+}
+.bubble { font-size: 12px; line-height: 1.55; padding: 6px 10px; border-radius: 9px; max-width: 78%; }
+.bubble.user { align-self: flex-end; background: rgba(59,130,246,.18); color: #bfe3ff; }
+.bubble.bot { align-self: flex-start; background: rgba(103,232,249,.1); color: #d8fbff; }
+.bubble.sys { align-self: center; background: transparent; color: var(--muted); font-size: 11px; }
+
+.row { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+
+.meter-wrap {
+  max-width: 760px; margin: 8px auto 0; display: flex; align-items: center; gap: 9px;
+  font-size: 10px; color: var(--muted);
+}
+.meter-label { flex: 0 0 auto; letter-spacing: 1px; }
+.meter {
+  flex: 1; height: 7px; border-radius: 999px; overflow: hidden;
+  background: rgba(110,170,255,.12); border: 1px solid rgba(110,170,255,.12);
+}
+#mic-level {
+  width: 0%; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #67e8f9, #a78bfa);
+  transition: width .06s linear, background .15s;
+}
+#mic-level.hot { background: linear-gradient(90deg, #fbbf24, #fb7185); }
+.meter-text { flex: 0 0 68px; text-align: right; }
+.meter-text.live { color: #67e8f9; }
+.meter-text.hot { color: #fbbf24; }
+.test-mic {
+  flex: 0 0 auto; height: 24px; padding: 0 8px; border-radius: 7px;
+  border: 1px solid rgba(103,232,249,.22); background: rgba(8,20,38,.7);
+  color: #9fdfff; font-size: 10px; cursor: pointer;
+}
+.test-mic:hover { border-color: var(--cyan); }
+.mic {
+  flex: 0 0 auto; height: 54px; padding: 0 18px; border-radius: 999px;
+  border: 1px solid rgba(103,232,249,.35);
+  background: radial-gradient(circle at 30% 20%, rgba(103,232,249,.22), rgba(8,20,38,.9));
+  color: #dffcff; cursor: pointer; display: flex; align-items: center; gap: 9px;
+  font-size: 13px; transition: .2s; min-width: 142px; justify-content: center;
+}
+.mic:hover { border-color: var(--cyan); box-shadow: 0 0 24px rgba(103,232,249,.25); }
+.mic.listening { background: radial-gradient(circle at 30% 20%, rgba(244,114,182,.3), rgba(30,8,20,.95)); border-color: #f472b6; animation: micpulse 1.4s infinite; }
+.mic-icon { color: var(--cyan); font-size: 14px; }
+.mic.listening .mic-icon { color: #f9a8d4; }
+
+.textbar { flex: 1; display: flex; gap: 8px; }
+.textbar input {
+  flex: 1; height: 46px; border-radius: 10px; border: 1px solid rgba(110,170,255,.18);
+  background: rgba(6,14,28,.82); color: var(--text); padding: 0 14px; font-size: 13px; outline: none;
+}
+.textbar input:focus { border-color: rgba(103,232,249,.45); }
+.textbar button {
+  height: 46px; padding: 0 18px; border-radius: 10px; border: 1px solid rgba(103,232,249,.3);
+  background: rgba(14,30,52,.9); color: #c9f7ff; cursor: pointer; font-size: 13px;
+}
+.textbar button:hover { border-color: var(--cyan); }
+.hint { max-width: 760px; margin: 8px auto 0; font-size: 10px; color: rgba(127,147,184,.75); text-align: center; }
+
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(.9)} }
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.06);opacity:1} }
+@keyframes micpulse { 0%,100%{box-shadow:0 0 0 0 rgba(244,114,182,.35)} 50%{box-shadow:0 0 0 12px rgba(244,114,182,0)} }
+
+@media (max-width: 620px) {
+  .badge { display: none; }
+  .captions { bottom: 24vh; font-size: 14px; }
+}
+
+
+
+/* ---------- 摄像头：让她看见我（2026-10-29） ---------- */
+.cam {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 52px; border-radius: 999px;
+  border: 1px solid rgba(110, 170, 255, 0.28);
+  background: rgba(12, 22, 38, 0.85);
+  color: #cfe3ff; font-size: 14px; cursor: pointer;
+  transition: all .2s ease;
+}
+.cam .cam-icon { color: #8fa6b8; font-size: 13px; }
+.cam:hover { border-color: rgba(103, 232, 249, 0.6); }
+.cam.on {
+  border-color: rgba(52, 211, 153, 0.8);
+  background: rgba(16, 60, 46, 0.85);
+  color: #d9fff0;
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.25);
+}
+.cam.on .cam-icon { color: #34d399; animation: camPulse 1.6s infinite; }
+@keyframes camPulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+.cam-wrap {
+  position: fixed; right: 22px; bottom: 132px;
+  width: 168px; border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .55);
+  display: none; background: #05080f; z-index: 20;
+}
+.cam-wrap.show { display: block; }
+.cam-wrap video { width: 100%; display: block; transform: scaleX(-1); }
+.cam-tag {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 3px 8px; font-size: 10px; color: #d9fff0;
+  background: linear-gradient(transparent, rgba(4, 30, 22, .9));
+}
+
+.seen {
+  margin-top: 6px; font-size: 11px; line-height: 1.6;
+  color: rgba(143, 166, 184, .9); min-height: 16px;
+}
+.seen b { color: #9fd3ff; font-weight: 500; }
+/* 摄像头预览：固定 4:3，抬高到按钮行之上，不压控件 */
+.cam-wrap {
+  right: 22px;
+  bottom: 214px;
+  width: 176px;
+  aspect-ratio: 4 / 3;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .cam-wrap { width: 132px; bottom: 198px; right: 14px; }
+}
+.cam-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  display: block;
+  transform: scaleX(-1);
+}
+.cam-wrap.show { display: block; }
+
+/* 镜头切换：只有摄像头开着时才出现，点了立刻换镜头 */
+.lens {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(10, 20, 34, .85);
+  border: 1px solid rgba(110, 170, 255, .22);
+  vertical-align: middle;
+}
+.lens[hidden] { display: none; }
+.lens button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: #8fa6b8;
+  font-size: 11px;
+  line-height: 1;
+  padding: 7px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .18s ease;
+  min-width: 48px;
+  min-height: 26px;
+}
+.lens button.on {
+  color: #04131f;
+  background: #67e8f9;
+  font-weight: 600;
+}
+.lens button:active { transform: scale(.96); }
+
+/* 后置拍的是外面，不做镜像；前置是自拍视角，镜像才顺手 */
+.cam-wrap.rear video { transform: none; }
+
+/* 摄像头状态提示（开关都要有明确反馈） */
+.cam-line {
+  max-width: 760px;
+  margin: 10px auto 0;
+  text-align: center;
+}
+.cam-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: rgba(143, 166, 184, .9);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(110, 170, 255, .16);
+  transition: all .2s ease;
+}
+.cam-state.on {
+  color: #d9fff0;
+  background: rgba(16, 60, 46, .75);
+  border-color: rgba(52, 211, 153, .55);
+}
+.cam-state.on .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #34d399; box-shadow: 0 0 8px #34d399;
+  animation: camPulse 1.6s infinite;
+}
+.cam-state.busy { color: #fde68a; border-color: rgba(251, 191, 36, .5); }
+
+/* 手机 Safari 录音后偶尔会留在听筒/通话路由；一个显眼的外放兜底 */
+.speaker {
+  margin-left: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(103,232,249,.35);
+  background: rgba(10,35,58,.88);
+  color: #cfe9ff;
+  font-size: 11px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.speaker:hover, .speaker:active {
+  border-color: #67e8f9;
+  background: rgba(22,58,88,.95);
+}
+/* 轻提示：开关摄像头/出错时说一句就消失 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 200px;
+  transform: translate(-50%, 12px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(8, 16, 28, .92);
+  color: #dff3ff;
+  font-size: 13px;
+  border: 1px solid rgba(110, 170, 255, .28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+  z-index: 60;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 手机端布局重排（2026-10-31） ----------
+   实测 390×844：发送按钮 right=434（屏幕 390），被挤出可视区；
+   摄像头按钮文字折成两行、麦克风是 70×50 的椭圆。这里把按钮收成
+   圆形图标、输入框吃掉剩余宽度、电平条让位（录音状态靠呼吸动画表达）。 */
+@media (max-width: 620px) {
+  .controls { padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .transcript { max-height: 15vh; margin-bottom: 8px; }
+
+  /* 电平条是排查麦克风问题的工具，手机屏太窄，桌面端仍保留 */
+  .meter-wrap { display: none; }
+
+  .row { gap: 7px; }
+  .mic {
+    flex: 0 0 56px; width: 56px; min-width: 0; height: 56px;
+    padding: 0; border-radius: 50%;
+  }
+  #mic-label { display: none; }
+  .mic-icon { font-size: 18px; }
+
+  /* 摄像头保留文字（"让她看见我"是核心功能，光一个圈看不懂），压到 10px 不换行 */
+  .cam {
+    flex: 0 0 auto; height: 46px; padding: 0 11px; border-radius: 999px;
+  }
+  .cam .cam-icon { font-size: 12px; }
+  #cam-label { display: inline; font-size: 10px; white-space: nowrap; }
+
+  .textbar { gap: 7px; min-width: 0; }
+  .textbar input { height: 46px; min-width: 0; padding: 0 12px; font-size: 16px; }
+  .textbar button { height: 46px; padding: 0 14px; font-size: 14px; }
+
+  .captions { bottom: 25vh; max-width: 88vw; font-size: 14px; }
+  .cam-line { margin-top: 6px; }
+  .seen { font-size: 10px; }
+  .hint { font-size: 9.5px; margin-top: 6px; }
+  .cam-wrap { width: 108px; right: 10px; bottom: 168px; }
+}
+
+/* 横屏手机（844×390 这种）：高度只剩一半，电平条和提示让位，
+   按钮缩一圈，别让控件吃掉半个屏幕 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .controls { padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .meter-wrap { display: none; }
+  .transcript { max-height: 20vh; margin-bottom: 6px; }
+  .mic { height: 46px; min-width: 118px; }
+  .cam { height: 44px; padding: 0 12px; }
+  .textbar input, .textbar button { height: 42px; }
+  .hint { display: none; }
+  .cam-wrap { width: 96px; bottom: 112px; }
+}
+
+
+
+
+/* 陪玩小徽标（2026-11-09）：开着陪玩时右下角常驻，她点评时闪一下 */
+/* 陪玩小人（2026-11-09）：完全照搬旧版 screen\overlay.py 的样式
+   · 气泡 background rgba(6,14,26,232)、color #EAF6FF
+   · 描边 1px rgba(77,107,254,.55)（DeepSeek 蓝）、圆角 14px、内边距 10/14、字号 13px
+   · 宽 96~280，出现时从右下往左上冒 14×8px 并淡入 220ms
+   · 停留 9 秒，淡出 170ms
+   · 小人用同一个 Live2D 小窗（widget2.html?compact=1，旧版就是它）
+*/
+.pa-pet {
+  position: fixed;
+  right: 14px;
+  bottom: 74px;
+  z-index: 60;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pa-pet[hidden] { display: none; }
+
+.pa-stage {
+  position: relative;
+  width: 210px;
+  height: 270px;
+}
+.pa-live2d {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  display: block;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
+}
+.pa-live2d[hidden] { display: none; }
+.pa-dot {
+  position: absolute;
+  right: 12px;
+  bottom: 16px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #34d399;
+  border: 2px solid #07101e;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.85);
+  animation: paPulse 2.4s infinite;
+}
+
+.pa-bubble {
+  max-width: 280px;
+  min-width: 96px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(6, 14, 26, 0.91);
+  color: #eaf6ff;
+  border: 1px solid rgba(77, 107, 254, 0.55);
+  font-size: 13px;
+  line-height: 1.55;
+  letter-spacing: 0.2px;
+  white-space: pre-wrap;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.86);
+  transform: translate(0, 0);
+  opacity: 1;
+}
+.pa-bubble[hidden] { display: none; }
+.pa-bubble.show { animation: paIn 0.22s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.pa-bubble.out {
+  opacity: 0;
+  transform: translate(14px, 8px);
+  transition: opacity 0.17s ease, transform 0.17s ease;
+}
+
+@keyframes paIn {
+  from { opacity: 0; transform: translate(14px, 8px); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes paPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+/* 2026-11-12 Pico 面板模式：只留她 + 字幕，黑底 */
+body.panel { background:#000 !important; }
+body.panel #bg-a, body.panel #bg-b, body.panel .bg-shade,
+body.panel .top, body.panel .controls, body.panel .hint,
+body.panel .cam-wrap, body.panel .seen, body.panel #audiohelp,
+body.panel #stage { display:none !important; }
+body.panel .call { position:fixed; inset:0; display:flex; align-items:flex-end; justify-content:center; }
+body.panel .halo { display:none !important; }
+body.panel .captions {
+  position:fixed; left:4%; right:4%; bottom:4%;
+  font-size:30px; line-height:1.35; text-align:center;
+  text-shadow:0 2px 12px #000, 0 0 2px #000;
+}
+body.panel #live2d { position:fixed; inset:0; width:100%; height:100%; }
+
+/* 2026-11-16 授权条：摄像头/麦克风没授权时出现，点一下就能申请 */
+.perm-bar{
+  position:fixed; left:50%; top:14px; transform:translateX(-50%); z-index:60;
+  display:flex; align-items:center; gap:10px; max-width:min(92vw,900px);
+  padding:10px 12px; border-radius:14px;
+  background:rgba(12,22,38,.92); border:1px solid rgba(120,170,255,.45);
+  color:#dff1ff; font-size:13px; box-shadow:0 10px 30px rgba(0,0,0,.45);
+  backdrop-filter:blur(8px);
+}
+.perm-bar[hidden]{display:none !important;}
+.perm-dot{width:9px;height:9px;border-radius:50%;background:#f59e0b;flex:0 0 auto;
+  box-shadow:0 0 0 4px rgba(245,158,11,.18);}
+.perm-txt{flex:1 1 auto; line-height:1.45; color:#dbeafe;}
+.perm-btn{
+  flex:0 0 auto; padding:7px 12px; border-radius:10px; cursor:pointer;
+  border:1px solid rgba(120,190,255,.55); background:rgba(40,90,160,.55); color:#eaf6ff;
+  font-size:13px; white-space:nowrap;
+}
+.perm-btn:hover{background:rgba(60,120,190,.7);}
+.perm-btn.ghost{background:transparent;}
+.perm-btn[hidden]{display:none !important;}
+.perm-x{border:0;background:transparent;color:#93a7c4;font-size:18px;line-height:1;cursor:pointer;padding:2px 4px;}
+.perm-x:hover{color:#dbeafe;}
+body.panel .perm-bar{display:none !important;}

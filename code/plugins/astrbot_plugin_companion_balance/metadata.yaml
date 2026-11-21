@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_balance
+display_name: 伴侣饭钱预警
+desc: 定时检查 DeepSeek 余额，低于 10 元时主动喊饿，提醒你充 token
+help: 自动检查；也可以发送「/余额」查看当前余额
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

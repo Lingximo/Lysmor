@@ -1,0 +1,8 @@
+name: astrbot_plugin_companion_mood
+display_name: 伴侣情绪波动
+desc: 给伴侣加一套随时间漂移、会被对话影响的情绪/激素状态；只影响语气和主动性，不改现有主动消息与记忆
+help: 自动运行；发送「/心情」可以看她现在的心情
+version: v0.1.0
+author: companion
+support_platforms:
+  - aiocqhttp

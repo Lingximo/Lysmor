@@ -1,0 +1,31 @@
+{
+  "_说明": "一键配置的主配置模板。跑 python configure.py 会生成 config.json（真值），config.json 已被 .gitignore 屏蔽。",
+  "data_dir": "D:\\你的数据目录",
+  "user_dir": "C:\\你的用户",
+  "gate_token": "你自己生成的一段随机口令",
+  "llm": {
+    "provider": "deepseek",
+    "api_key": "sk-你的DeepSeek密钥（platform.deepseek.com 创建）",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-chat"
+  },
+  "bot_panel": 8012,
+  "qq": "1000000000",
+  "qq2": "1000000001",
+  "bot_instance": "00000000-0000-0000-0000-000000000000",
+  "ports": {
+    "chat": 8001,
+    "gallery": 8002,
+    "video": 8003,
+    "video_https": 8004,
+    "life": 8005,
+    "brain": 8006,
+    "house": 8007,
+    "qr": 8008,
+    "hub": 8009,
+    "hands": 8010,
+    "bot": 8011,
+    "panel": 8012,
+    "napcat": 8013
+  }
+}

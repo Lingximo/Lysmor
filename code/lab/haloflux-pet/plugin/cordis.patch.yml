@@ -1,0 +1,4 @@
+- insert:
+    - id: dsh-haloflux-office
+      name: dsh-haloflux-office
+      config: {}

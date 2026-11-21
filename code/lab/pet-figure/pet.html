@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>TA桌宠</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-user-select:none;user-select:none}
+#fig{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;z-index:1}
+#hit{position:absolute;inset:0;z-index:2;background:transparent}
+#bubble{position:fixed;left:0;top:0;z-index:99;max-width:340px;padding:9px 13px;border-radius:14px;
+  background:rgba(12,22,38,.94);color:#e6f3ff;font:13px/1.5 "Microsoft YaHei",sans-serif;
+  border:1px solid rgba(120,170,255,.45);box-shadow:0 8px 24px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .18s;pointer-events:none;transform:translate(-50%,-100%)}
+#bubble.on{opacity:1}
+#chat{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:9;width:min(520px,80vw)}
+#chatInput{width:100%;box-sizing:border-box;padding:10px 13px;border-radius:12px;
+  border:1px solid rgba(120,170,255,.5);background:rgba(12,22,38,.95);color:#e6f3ff;
+  font:13px "Microsoft YaHei",sans-serif;outline:none}
+#menu{position:fixed;right:10px;bottom:10px;display:none;z-index:9;background:rgba(12,22,38,.97);
+  border:1px solid rgba(120,170,255,.45);border-radius:10px;padding:5px;font:13px "Microsoft YaHei",sans-serif;color:#dbeafe}
+#menu div{padding:6px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+#menu div:hover{background:rgba(80,140,220,.35)}
+</style></head><body>
+<div id="hit"></div>
+<iframe id="fig" src="/web/figure-frame.html" sandbox="allow-scripts allow-same-origin" allow="autoplay"></iframe>
+<div id="bubble"></div>
+<div id="chat"><input id="chatInput" placeholder="跟她说句话，回车发送…"></div>
+<div id="menu">
+<div data-a="chat">聊天</div>
+<div data-a="on">开始陪玩</div><div data-a="off">停下陪玩</div><div data-a="panic">紧急停</div>
+<div data-a="hide">先藏起来</div><div data-a="quit">退出TA</div></div>
+<script type="module" src="/pet.js"></script>
+</body></html>
