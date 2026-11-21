@@ -27,7 +27,7 @@ from cryptography.x509.oid import NameOID
 
 OUT = r"D:\你的数据目录\tls"
 CA_KEY_PATH = os.path.join(OUT, "ca.key")
-IPS = ["192.168.1.5", "172.16.1.100", "192.168.137.1", "127.0.0.1"]
+IPS = ["192.168.1.100", "172.16.1.100", "192.168.137.1", "127.0.0.1"]
 DNS = ["localhost", "companion.local"]
 
 

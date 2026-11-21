@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Project = 'D:\你的数据目录\lab\pico\unity\CompanionWindow',
     [string]$Apk = 'D:\dev\companion-window.apk',
     [switch]$Install

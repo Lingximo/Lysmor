@@ -55,7 +55,11 @@ def main():
             s.connect(("127.0.0.1", port))
             add("端口 %d %s" % (port, name), OK)
         except Exception:
-            add("端口 %d %s" % (port, name), BAD, "连不上")
+            # 8782 屏幕观察：改为按需启动（陪玩采样时才起），不作为常驻必需端口
+            if port == 8782:
+                add("端口 %d %s" % (port, name), WARN, "未启动（按需）")
+            else:
+                add("端口 %d %s" % (port, name), BAD, "连不上")
         finally:
             s.close()
 

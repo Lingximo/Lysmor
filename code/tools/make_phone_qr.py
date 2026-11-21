@@ -5,7 +5,7 @@ import qrcode
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = open(r"D:\你的数据目录\gate_token.txt", encoding="utf-8-sig").read().strip()
-IP = "192.168.1.5"
+IP = "192.168.1.100"
 OUT = r"C:\你的用户\Desktop\TA手机访问.png"
 
 ITEMS = [

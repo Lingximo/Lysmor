@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $root = 'D:\Napcat'
 $lockPath = Join-Path $root 'version-lock.json'

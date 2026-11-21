@@ -62,18 +62,27 @@ def ingest(text, who="user", now=None):
                 changed = True
         # 原话：你说的短句（不是提问/命令），作"他最近说过的话"
         if 4 <= len(t) <= 60 and not t.endswith(("？", "?", "！", "!")) \
-                and not t.startswith(("打开", "关闭", "重启", "查", "看下", "帮我")):
-            d["quotes"].append({"text": t, "at": now})
-            d["quotes"] = d["quotes"][-10:]
-            changed = True
+                and not t.startswith(("打开", "关闭", "重启", "查", "看下", "帮我")) \
+                and not t.startswith("我忽然想起"):
+            key = "".join(t.split())
+            dup = any("".join(str(q.get("text") or "").split()) == key
+                      for q in d.get("quotes", []))
+            if not dup:
+                d["quotes"].append({"text": t, "at": now})
+                d["quotes"] = d["quotes"][-10:]
+                changed = True
     # 承诺（谁说的都算，主要是她答应你的）
     if any(w in t for w in PROMISE_WORDS) and len(t) <= 80:
         days = PROMISE_DEFAULT_DAYS
         if any(w in t for w in LONG_PROMISE):
             days = 7.0
-        d["promises"].append({"text": t[:80], "at": now, "until": now + days * 86400})
-        d["promises"] = d["promises"][-20:]
-        changed = True
+        key = "".join(t[:80].split())
+        dup = any("".join(str(p.get("text") or "").split()) == key
+                  for p in d.get("promises", []))
+        if not dup:
+            d["promises"].append({"text": t[:80], "at": now, "until": now + days * 86400})
+            d["promises"] = d["promises"][-20:]
+            changed = True
     if changed:
         _save(d)
     return changed

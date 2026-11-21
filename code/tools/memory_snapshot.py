@@ -42,7 +42,8 @@ def main() -> None:
         shutil.copy2(STATE, os.path.join(SNAP, "state_%s.json" % ts))
     files = sorted(f for f in os.listdir(SNAP) if f.endswith((".db", ".json")))
     # 按时间戳分组保留最近 KEEP 组
-    stamps = sorted({f.rsplit("_", 1)[-1].split(".")[0] for f in files})
+    # 用完整时间戳（YYYYMMDD_HHMMSS）做 key；旧写法只取 HHMMSS 丢了日期，会把新快照删掉
+    stamps = sorted({f.split("_", 1)[-1].rsplit(".", 1)[0] for f in files})
     for old in stamps[:-KEEP]:
         for f in list(files):
             if f.endswith(old + ".db") or f.endswith(old + ".json"):

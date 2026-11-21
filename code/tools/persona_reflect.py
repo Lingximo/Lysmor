@@ -267,7 +267,12 @@ def main():
         if added:
             _log("自选事件", {"n": added})
     # future self（缺口4）：她向往的自己，一句话，写进叙事附录
-    fut = _llm("你是TA。用一句话说：你想成为什么样的TA（20 字内）。只写正文。")
+    fut = None
+    if brain is not None:
+        try:
+            fut = brain._llm("你是TA。用一句话说：你想成为什么样的TA（20 字内）。只写正文。")
+        except Exception:
+            fut = None
     if fut:
         try:
             with io.open(r"D:\你的数据目录\state\persona\narrative_self.md", "a", encoding="utf-8") as f:

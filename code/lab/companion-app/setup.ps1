@@ -1,4 +1,4 @@
-# TA桌面 App（Electron 壳）重建脚本
+﻿# TA桌面 App（Electron 壳）重建脚本
 # 作用：拉 Electron 运行时、装应用代码（含 Coopanion 桌宠表现层）、建快捷方式。
 # 运行时放在 D:\dev\companion-app（不进灾后复活包）。
 $ErrorActionPreference = 'Stop'

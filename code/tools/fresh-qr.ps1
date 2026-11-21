@@ -1,4 +1,4 @@
-$targets = @(
+﻿$targets = @(
   'D:\napcat\app\cache\qrcode.png',
   'D:\napcat\app\cache\qrcode.jpg',
   'D:\你的数据目录\webchat\qr-phone.png'

@@ -53,6 +53,25 @@ def _write_status(data):
         pass
 
 
+NAILS_MARK = "[钉子]"
+
+
+def _ingest_nails(text, req):
+    """把用户说的话喂进钉子账本，并把钉子常驻注入这次请求。失败静默。"""
+    try:
+        tools = r"D:\你的数据目录\tools"
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import nails as _nails
+        _nails.ingest(text, who="user")
+        block = _nails.nails_block()
+        if block and NAILS_MARK not in (getattr(req, "system_prompt", "") or ""):
+            base = getattr(req, "system_prompt", "") or ""
+            req.system_prompt = (base + "\n\n" + NAILS_MARK + " " + block).strip()
+    except Exception:
+        pass
+
+
 class VideoBridge(Star):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -263,6 +282,7 @@ class VideoBridge(Star):
         if not text:
             return
         event.set_extra("_video_bridge_user", text[:200])
+        _ingest_nails(text, req)
         items = _load(VIDEO_RECENT)[-4:]
         if not items:
             return

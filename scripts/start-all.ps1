@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 #  Companion launcher - TEMPLATE
 #  Starts every service and opens the console page.
 #  Edit the values below before first use.
