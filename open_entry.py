@@ -49,16 +49,45 @@ def listening(port):
         return False
 
 
+def service_pythonw():
+    """返回 (pythonw 路径, 环境变量)：用底层 pythonw 避免控制台弹窗，
+    同时把 venv 的 site-packages 注入，保证第三方库可用。"""
+    exe = sys.executable or ""
+    base = os.path.dirname(exe)
+    venv = os.path.dirname(base)
+    env = dict(os.environ)
+    cand = exe.replace("python.exe", "pythonw.exe")
+    cfg_path = os.path.join(venv, "pyvenv.cfg")
+    if os.path.exists(cfg_path):
+        sp = os.path.join(venv, "Lib", "site-packages")
+        if os.path.isdir(sp):
+            old = env.get("PYTHONPATH") or ""
+            env["PYTHONPATH"] = sp + (os.pathsep + old if old else "")
+        try:
+            for line in open(cfg_path, encoding="utf-8", errors="ignore"):
+                if line.lower().startswith("home"):
+                    home = line.split("=", 1)[1].strip()
+                    real = os.path.join(home, "pythonw.exe")
+                    if os.path.exists(real):
+                        cand = real
+                    break
+        except OSError:
+            pass
+    return (cand if os.path.exists(cand) else exe), env
+
+
 def start(script, port):
     if listening(port):
         return False
     DETACHED = 0x00000008 | 0x08000000          # DETACHED_PROCESS | CREATE_NO_WINDOW（不弹黑窗口）
-    subprocess.Popen([sys.executable, script],
+    pyw, env = service_pythonw()
+    subprocess.Popen([pyw, script],
                      cwd=os.path.dirname(script),
                      creationflags=DETACHED,
                      close_fds=True,
                      stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL)
+                     stderr=subprocess.DEVNULL,
+                     env=env)
     return True
 
 

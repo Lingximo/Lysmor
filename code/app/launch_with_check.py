@@ -27,10 +27,47 @@ def load_cfg():
         return {}
 
 
-def pythonw():
+def service_pythonw():
+    """返回 (pythonw, env)：底层 pythonw 不弹控制台；注入 venv 的 site-packages 保证第三方库可用。"""
     exe = sys.executable or ""
+    base = os.path.dirname(exe)
+    venv = os.path.dirname(base)
+    env = dict(os.environ)
     cand = exe.replace("python.exe", "pythonw.exe")
-    return cand if os.path.exists(cand) else exe
+    cfg_path = os.path.join(venv, "pyvenv.cfg")
+    if os.path.exists(cfg_path):
+        sp = os.path.join(venv, "Lib", "site-packages")
+        if os.path.isdir(sp):
+            old = env.get("PYTHONPATH") or ""
+            env["PYTHONPATH"] = sp + (os.pathsep + old if old else "")
+        try:
+            for line in open(cfg_path, encoding="utf-8", errors="ignore"):
+                if line.lower().startswith("home"):
+                    home = line.split("=", 1)[1].strip()
+                    real = os.path.join(home, "pythonw.exe")
+                    if os.path.exists(real):
+                        cand = real
+                    break
+        except OSError:
+            pass
+    return (cand if os.path.exists(cand) else exe), env
+
+
+def start_service(name, script):
+    if not script or not os.path.exists(script):
+        return False
+    try:
+        pyw, env = service_pythonw()
+        subprocess.Popen([pyw, script],
+                         cwd=os.path.dirname(script),
+                         creationflags=0x00000008 | 0x08000000,
+                         close_fds=True,
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL,
+                         env=env)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def service_defs(cfg):
@@ -65,21 +102,6 @@ def http_ok(port, timeout=2.0):
     try:
         with urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=timeout) as r:
             return 200 <= r.status < 500
-    except Exception:  # noqa: BLE001
-        return False
-
-
-def start_service(name, script):
-    if not script or not os.path.exists(script):
-        return False
-    try:
-        subprocess.Popen([pythonw(), script],
-                         cwd=os.path.dirname(script),
-                         creationflags=0x00000008 | 0x08000000,
-                         close_fds=True,
-                         stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
-        return True
     except Exception:  # noqa: BLE001
         return False
 

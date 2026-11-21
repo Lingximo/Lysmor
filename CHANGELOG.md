@@ -1,5 +1,10 @@
 # 版本历史
 
+## v0.1.6
+
+- 修复：从 venv 启动时拉起的服务会弹控制台窗口——改为底层 pythonw + 注入 venv site-packages（无窗口且依赖可用）
+- `open_entry.py` 与 `code/app/launch_with_check.py` 同步该修复
+
 ## v0.1.5
 
 - 修复：视频服务（`code/video/server.py`）在缺少 `code/video/config.json` 时启动崩溃——改为缺省配置兜底
