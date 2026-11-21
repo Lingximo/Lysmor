@@ -60,7 +60,6 @@ def targets():
         ("记忆内核", _p(LIVING, "core", "base", "config_validator.py")),
         ("服务", _p(MEM, "video", "server.py")),
         ("服务", _p(MEM, "houseviz", "server.py")),
-        ("服务", _p(MEM, "screen", "scene_watch.py")),
         ("服务", _p(MEM, "lifeviz", "server.py")),
         ("服务", _p(MEM, "memoryrhythm", "rhythm.py")),
         ("工具", _p(MEM, "tools", "vitals.py")),

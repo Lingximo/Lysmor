@@ -43,9 +43,9 @@ def main():
     # ---------- 1. 服务端口 ----------
     ports = {
         8012: "AstrBot 面板", 8011: "OneBot", 8003: "视频", 8004: "视频(HTTPS)",
-        8782: "屏幕观察", 8001: "网页聊天", 8002: "简笔画画廊", 8797: "手机中继",
+        8001: "网页聊天", 8002: "简笔画画廊",
         8009: "统一入口",
-        8801: "眼睛服务", 8010: "她的手",
+        8010: "她的手",
     }
     for port, name in ports.items():
         import socket
@@ -55,11 +55,7 @@ def main():
             s.connect(("127.0.0.1", port))
             add("端口 %d %s" % (port, name), OK)
         except Exception:
-            # 8782 屏幕观察：改为按需启动（陪玩采样时才起），不作为常驻必需端口
-            if port == 8782:
-                add("端口 %d %s" % (port, name), WARN, "未启动（按需）")
-            else:
-                add("端口 %d %s" % (port, name), BAD, "连不上")
+            add("端口 %d %s" % (port, name), BAD, "连不上")
         finally:
             s.close()
 

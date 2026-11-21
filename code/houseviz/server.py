@@ -365,10 +365,10 @@ class House:
         """把电视画面交给视觉模型看一眼，写事件并返回描述。"""
         import urllib.request
         desc = ""
-        # 8804 有 3 秒描述节流/忙时会返回 described=False，重试一次
+        # 8018 有 3 秒描述节流/忙时会返回 described=False，重试一次
         for attempt in range(2):
             req = urllib.request.Request(
-                "http://127.0.0.1:8804/frame?describe=1", data=jpeg,
+                "http://127.0.0.1:8018/frame?describe=1", data=jpeg,
                 headers={"Content-Type": "image/jpeg"}, method="POST")
             try:
                 with urllib.request.urlopen(req, timeout=90) as r:

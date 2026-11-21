@@ -1,4 +1,4 @@
-﻿# 看门狗：面板服务挂了就拉起来（每 3 分钟跑一次）
+# 看门狗：面板服务挂了就拉起来（每 3 分钟跑一次）
 # 由计划任务 Companion-ServerWatchdog 调用，也可以手动跑一遍
 $ErrorActionPreference = "SilentlyContinue"
 $venv = "C:\你的用户\.astrbot_launcher\instances\<BOT_INSTANCE>\venv\Scripts\python.exe"
@@ -10,11 +10,7 @@ $targets = @(
     @{ Port = 8006; Script = "D:\你的数据目录\brainviz\server.py"; Name = "记忆大脑" },
     @{ Port = 8007; Script = "D:\你的数据目录\houseviz\server.py"; Name = "大平层俯视图" },
     @{ Port = 8001; Script = "D:\你的数据目录\webchat\server.py";  Name = "她的网页" },
-    @{ Port = 8801; Script = "D:\你的数据目录\lab\vision\eye_server.py"; Name = "她的眼睛" },
     @{ Port = 8010; Script = "D:\你的数据目录\lab\hands\hands_server.py"; Name = "她的手" },
-    @{ Port = 8797; Script = "D:\你的数据目录\lab\wear\phone_only.py"; Name = "手机中继" },
-    @{ Port = 8803; Script = "D:\你的数据目录\lab\game\controller.py"; Name = "玩游戏的手眼" },
-    @{ Port = 8804; Script = "D:\你的数据目录\lab\pico\eye_server_8804.py"; Name = "Pico 眼睛" },
     @{ Port = 8002; Script = "D:\你的数据目录\art\gallery_server.py"; Name = "简笔画画廊" },
     @{ Port = 8009; Script = "D:\你的数据目录\hub\server.py"; Name = "统一入口" }
 )

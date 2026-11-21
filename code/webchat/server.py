@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """TA的专属网页 · 端口 8001
 
 它只做一件事：把网页上的一句话送进 AstrBot 的聊天接口，把她的话原样流回来。
@@ -402,7 +402,7 @@ class Handler(BaseHTTPRequestHandler):
         # "看看我"这类话：用电脑上的 E4 取一帧，把看到的内容带上
         if any(k in text for k in ("看看我", "看看你", "看着我", "看看你")):
             try:
-                rr = requests.get("http://127.0.0.1:8801/look", timeout=120)
+                rr = requests.get("http://127.0.0.1:8016/look", timeout=120)
                 desc = str((rr.json() or {}).get("desc") or "").strip() if rr.status_code == 200 else ""
                 if desc:
                     message = ("（电脑摄像头看到：%s）\n%s" % (desc, text)).strip()

@@ -80,7 +80,7 @@ EMBED_MODEL = "bge-m3:latest"
 SEMANTIC_MIN_SIM = 0.46   # 实测：相关的句子 0.53~0.66，无关的 ≤0.34
 SCREEN_STATE = r"D:\你的数据目录\screen\state.json"
 SCREEN_EVENT = r"D:\你的数据目录\screen\event.json"
-SCREEN_API = "http://127.0.0.1:8782"
+SCREEN_API = "http://127.0.0.1:8014"
 MODEL_DIR = r"D:\你的数据目录\models\faster-whisper"
 TLS_DIR = r"D:\你的数据目录\tls"
 TLS_CERT = os.path.join(TLS_DIR, "server.crt")
@@ -288,7 +288,7 @@ async def fresh_scene_note() -> str:
     now = time.time()
     if FRESH_SCENE["text"] and now - FRESH_SCENE["ts"] < 6:
         return FRESH_SCENE["text"]
-    # 快路：8782 刚更新过（10 秒内）就直接用它，省掉一次抓帧+视觉
+    # 快路：8014 刚更新过（10 秒内）就直接用它，省掉一次抓帧+视觉
     try:
         with open(SCREEN_STATE, encoding="utf-8") as f:
             st = json.load(f)
@@ -711,7 +711,7 @@ async def companion_memory_loop():
 
 
 def screen_context():
-    # 刚抓过一帧：以那一帧为准，8782 的摘要可能已经过时，不再塞进来打架
+    # 刚抓过一帧：以那一帧为准，8014 的摘要可能已经过时，不再塞进来打架
     if FRESH_SCENE["text"] and time.time() - FRESH_SCENE["ts"] < 45:
         return ("\n\n【你刚刚亲眼看到的屏幕（刚抓的）】\n" + FRESH_SCENE["text"]
                 + "\n这是此刻的画面；如果和你之前的印象不一样，以这个为准。")
@@ -2382,7 +2382,7 @@ SCREEN_JSON = r"D:\你的数据目录\screen\state.json"
 HANDS_ACT_ENABLED = False
 # 2026-11-20 部署者要求：视觉模型只在他要求她看时才用；自动看屏幕点评停用
 VISION_COMMENT_ENABLED = False
-# 2026-11-20：8782 屏幕观察（视觉看屏）属于旧方案，默认不再启用
+# 2026-11-20：8014 屏幕观察（视觉看屏）属于旧方案，默认不再启用
 SCREEN_WATCH_ENABLED = False
 COMPANION = {"last_comment": 0.0, "last_summary": "", "on": False,
              "play": False, "last_act": 0.0, "actions": 0, "last_diary": 0.0, "recent_acts": []}
@@ -2408,14 +2408,14 @@ async def _hands_health() -> bool:
         return False
 
 
-PLAYER_API = "http://127.0.0.1:8803"
+PLAYER_API = "http://127.0.0.1:8017"
 PLAYER_CFG = r"D:\你的数据目录\lab\game\player.json"
 
 
 async def _auto_play_after_game() -> None:
     """她开了绝区零之后：等游戏真的到前台、加载完，再打一套学过的键位。
 
-    注意：是否真按键由 8803 的 dry 决定（player.json / POST /mode）。
+    注意：是否真按键由 8017 的 dry 决定（player.json / POST /mode）。
     dry=true 时只记录不按键，等于"演练"。
     """
     try:
@@ -2579,16 +2579,16 @@ async def screen_companion_loop():
                 continue
             if not VISION_COMMENT_ENABLED:
                 continue
-            # 心跳：证明"陪玩还开着"；只有 8782 真的关了观察才重新拉起
+            # 心跳：证明"陪玩还开着"；只有 8014 真的关了观察才重新拉起
             # （_screen_watch(True) 每次调用都会清它的基线，不能每轮都调）
             try:
                 timeout = aiohttp.ClientTimeout(total=4)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
-                    st = await (await session.get("http://127.0.0.1:8782/api/state")).json(content_type=None)
+                    st = await (await session.get("http://127.0.0.1:8014/api/state")).json(content_type=None)
                     if not st.get("watching"):
                         await _screen_watch(True)
                     else:
-                        await session.post("http://127.0.0.1:8782/api/watch/ping", json={})
+                        await session.post("http://127.0.0.1:8014/api/watch/ping", json={})
             except Exception:  # noqa: BLE001
                 pass
             if time.time() - COMPANION["last_comment"] < COMPANION_MIN_GAP:
@@ -2599,7 +2599,7 @@ async def screen_companion_loop():
             if time.time() - LAST_USER_AT < 15:
                 continue
 
-            # 不依赖 8782 的"换镜头"检测（它只在画面大变时描述，静止时会一直空），
+            # 不依赖 8014 的"换镜头"检测（它只在画面大变时描述，静止时会一直空），
             # 这里自己抓一张屏幕图，走同一个视觉模型。
             try:
                 jpg = await asyncio.get_running_loop().run_in_executor(None, _grab_screen_jpeg)
@@ -2867,7 +2867,7 @@ async def _screen_state_quiet():
     try:
         timeout = aiohttp.ClientTimeout(total=4)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get("http://127.0.0.1:8782/api/state") as resp:
+            async with session.get("http://127.0.0.1:8014/api/state") as resp:
                 j = await resp.json(content_type=None)
         return {"watching": bool(j.get("watching"))}
     except Exception:  # noqa: BLE001
@@ -2880,7 +2880,7 @@ async def api_companion_state(request):
     try:
         timeout = aiohttp.ClientTimeout(total=4)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get("http://127.0.0.1:8782/api/state") as resp:
+            async with session.get("http://127.0.0.1:8014/api/state") as resp:
                 screen = {"watching": bool((await resp.json(content_type=None)).get("watching"))}
     except Exception:  # noqa: BLE001
         screen = {"watching": None}

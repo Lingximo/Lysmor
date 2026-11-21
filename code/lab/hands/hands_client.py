@@ -151,12 +151,12 @@ def call(act: dict) -> dict:
         if a == "__play_rule__":
             # 先把游戏窗口拉到前台，否则守卫会拒绝发键
             try:
-                requests.post("http://127.0.0.1:8803/focus",
+                requests.post("http://127.0.0.1:8017/focus",
                               json={"title": "绝区零"}, timeout=15)
                 time.sleep(0.6)
             except Exception:  # noqa: BLE001
                 pass
-            r = requests.post("http://127.0.0.1:8803/play_rule",
+            r = requests.post("http://127.0.0.1:8017/play_rule",
                               json={"query": str(act.get("query") or "")}, timeout=60)
             j = r.json() if r.content else {}
             if j.get("ok"):
@@ -165,10 +165,10 @@ def call(act: dict) -> dict:
                     keys or "空", "演练，没真按" if j.get("dry") else "真按了")}
             return {"ok": False, "error": str(j.get("error") or "没打成")}
         if a == "__live__":
-            r = requests.post("http://127.0.0.1:8803/mode", json={"dry": False}, timeout=10)
+            r = requests.post("http://127.0.0.1:8017/mode", json={"dry": False}, timeout=10)
             return {"ok": r.ok, "result": "好，接下来我真按键了"}
         if a == "__dry__":
-            r = requests.post("http://127.0.0.1:8803/mode", json={"dry": True}, timeout=10)
+            r = requests.post("http://127.0.0.1:8017/mode", json={"dry": True}, timeout=10)
             return {"ok": r.ok, "result": "行，先演练，只记录不按"}
         if a == "__resume__":
             r = requests.post(BASE + "/resume", timeout=10)
