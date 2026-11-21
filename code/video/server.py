@@ -3258,7 +3258,15 @@ def _pick_pet_line(kind, mood):
     if not pool:
         return None
     # 确定性轮换：同一个小时候内同一句，不随机
+    # 2026-11-21 修：池里的"早上好/晚上好"带时间语义，先按时段过滤，
+    # 避免 23 点说出"早上好"（原来只是 hour % len(pool) 的巧合）
     h = time.localtime().tm_hour
+    if 5 <= h < 11:          # 早上
+        pool = [x for x in pool if "晚上好" not in x]
+    elif h >= 18 or h < 5:   # 晚上/深夜
+        pool = [x for x in pool if "早上好" not in x]
+    else:                    # 白天
+        pool = [x for x in pool if "早上好" not in x and "晚上好" not in x]
     return pool[h % len(pool)]
 
 
