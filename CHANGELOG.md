@@ -1,5 +1,11 @@
 # 版本历史
 
+## v0.1.5
+
+- 修复：视频服务（`code/video/server.py`）在缺少 `code/video/config.json` 时启动崩溃——改为缺省配置兜底
+- 新增 `code/video/config.example.json`（视频服务配置模板）；一键配置时自动复制为 `config.json`
+- 入口 `open_entry.py` 现在同时拉起视频服务
+
 ## v0.1.4
 
 - 新增桌面入口 `code/app/launch_with_check.py`：启动前可视化体检依赖服务，缺失自动拉起，就绪后打开总入口

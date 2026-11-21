@@ -24,6 +24,7 @@ CFG_PATH = os.path.join(ROOT, "config.json")
 MODULES = [
     ("Hub", "hub/server.py", "hub"),
     ("网页聊天", "webchat/server.py", "chat"),
+    ("视频通话", "video/server.py", "video"),
     ("生命面板", "lifeviz/server.py", "life"),
     ("记忆星图", "brainviz/server.py", "brain"),
 ]

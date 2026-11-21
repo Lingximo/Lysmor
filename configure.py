@@ -319,6 +319,17 @@ def apply_config(cfg):
             print("  大平层户型：已从示例复制 plan.json")
         except Exception as exc:  # noqa: BLE001
             print("  ! 户型复制失败：%s" % exc)
+
+    # 视频服务配置：没有 config.json 就从示例复制一份（人设/模型由使用者自己填）
+    vcfg = os.path.join(cfg["data_dir"], "video", "config.json")
+    vcfg_example = os.path.join(CODE, "video", "config.example.json")
+    if os.path.exists(vcfg_example) and not os.path.exists(vcfg):
+        try:
+            import shutil as _sh
+            _sh.copy2(vcfg_example, vcfg)
+            print("  视频服务：已从示例复制 config.json")
+        except Exception as exc:  # noqa: BLE001
+            print("  ! 视频配置复制失败：%s" % exc)
     return n_files, n_repl
 
 

@@ -1,0 +1,8 @@
+{
+  "api_key": "",
+  "api_base": "https://api.deepseek.com",
+  "model": "deepseek-chat",
+  "voice": "zh-CN-XiaoyiNeural",
+  "owner_name": "你",
+  "persona": ""
+}

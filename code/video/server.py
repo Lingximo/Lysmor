@@ -774,11 +774,14 @@ def _asr_warmup():
         except OSError:
             pass
 
-HOUSE_EVENTS_PATH = r"D:\你的数据目录\houseviz\mood_events.jsonl"
-with open(CONFIG_PATH, encoding="utf-8") as f:
-    CFG = json.load(f)
+HOUSE_EVENTS_PATH = os.path.join(os.path.dirname(CONFIG_PATH), "..", "houseviz", "mood_events.jsonl")
+try:
+    with open(CONFIG_PATH, encoding="utf-8-sig") as f:
+        CFG = json.load(f)
+except (OSError, ValueError):
+    CFG = {}
 
-PERSONA = CFG.get("persona", "")
+PERSONA = CFG.get("persona") or "你是一个温柔、可靠的 AI 伴侣，用中文简洁地回答。"
 
 
 def _load_persona_gate():
