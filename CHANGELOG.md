@@ -1,5 +1,15 @@
 # 版本历史
 
+## v0.1.3
+
+- README 全面重写（功能特性、快速开始、素材导入、文档索引、目录结构、常见问题）
+- 新增 CONTRIBUTING.md、CODE_OF_CONDUCT.md、Issue / PR 模板
+- 新增 GitHub Actions 自动检查（Python 语法 + JSON 校验）
+
+## v0.1.2
+
+- 文档表述中性化
+
 ## v0.1.1
 
 - **许可证切换为 GNU AGPL-3.0**（全项目统一）
