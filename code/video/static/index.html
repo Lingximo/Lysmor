@@ -1,10 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#03050c">
-  <title>和TA视频</title>
+  <title data-i18n="video.title"></title>
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/static/icon-192.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%2367e8f9'/%3E%3C/svg%3E">
@@ -22,10 +22,11 @@
       <span class="dot"></span>
       <div>
         <h1>TA</h1>
-        <p id="status">正在连接…</p>
+        <p id="status" data-i18n="video.connecting"></p>
       </div>
     </div>
-    <div class="badge">视频通话 · Live2D <span id="ver" style="opacity:.55;font-size:10px">v.1110-2125</span></div>
+    <div class="badge"><span data-i18n="video.badge"></span> <span id="ver" style="opacity:.55;font-size:10px">v.1110-2125</span></div>
+    <select data-language-select></select>
   </header>
 
   <main class="call">
@@ -35,50 +36,51 @@
 
   <div id="perm-bar" class="perm-bar" role="alertdialog" aria-labelledby="perm-txt" hidden>
     <div class="perm-dot" id="perm-dot"></div>
-    <div class="perm-txt" id="perm-txt">正在检查摄像头 / 麦克风权限…</div>
-    <button id="perm-allow" class="perm-btn">允许摄像头和麦克风</button>
-    <button id="perm-open" class="perm-btn ghost">在浏览器里打开</button>
-    <button id="perm-x" class="perm-x" title="先不管">×</button>
+    <div class="perm-txt" id="perm-txt" data-i18n="video.check_permissions"></div>
+    <button id="perm-allow" class="perm-btn" data-i18n="video.allow"></button>
+    <button id="perm-open" class="perm-btn ghost" data-i18n="video.open_browser"></button>
+    <button id="perm-x" class="perm-x" data-i18n-title="video.dismiss">×</button>
   </div>
   <footer class="controls">
     <div class="transcript" id="transcript"></div>
     <div class="meter-wrap">
-      <span class="meter-label">麦克风</span>
+      <span class="meter-label" data-i18n="video.microphone"></span>
       <div class="meter"><div id="mic-level"></div></div>
-      <span id="meter-text" class="meter-text">未开启</span>
-      <button id="test-mic" class="test-mic">测麦克风</button>
+      <span id="meter-text" class="meter-text" data-i18n="video.not_started"></span>
+      <button id="test-mic" class="test-mic" data-i18n="video.test_mic"></button>
     </div>
     <div class="row">
-      <button id="mic" class="mic" title="点一下开始说话，再点一下结束">
+      <button id="mic" class="mic" data-i18n-title="video.mic_title">
         <span class="mic-icon">●</span>
-        <span id="mic-label">点击说话</span>
+        <span id="mic-label" data-i18n="video.speak"></span>
       </button>
-      <button id="cam" class="cam" title="打开摄像头，让她能看见你">
+      <button id="cam" class="cam" data-i18n-title="video.camera_title">
         <span class="cam-icon">◉</span>
-        <span id="cam-label">让她看见我</span>
+        <span id="cam-label" data-i18n="video.see_me"></span>
       </button>
       <div class="textbar">
-        <input id="input" type="text" placeholder="也可以打字…" autocomplete="off">
-        <button id="send">发送</button>
+        <input id="input" type="text" data-i18n-placeholder="video.input" autocomplete="off">
+        <button id="send" data-i18n="video.send"></button>
       </div>
     </div>
     <div class="cam-line">
-      <span id="cam-state" class="cam-state">摄像头已关闭</span>
-      <div id="lens" class="lens" hidden role="group" aria-label="选择镜头">
-        <button type="button" data-lens="user" title="前置：拍你自己">前置</button>
-        <button type="button" data-lens="environment" title="后置：拍你眼前的东西">后置</button>
+      <span id="cam-state" class="cam-state" data-i18n="video.camera_off"></span>
+      <div id="lens" class="lens" hidden role="group" data-i18n-label="video.choose_lens">
+        <button type="button" data-lens="user" data-i18n-title="video.front_title" data-i18n="video.front"></button>
+        <button type="button" data-lens="environment" data-i18n-title="video.rear_title" data-i18n="video.rear"></button>
       </div>
-      <button id="speaker" class="speaker" title="声音小/听不到时点一下，切到外放并重播最近一句">外放</button>
+      <button id="speaker" class="speaker" data-i18n-title="video.speaker_title" data-i18n="video.speaker"></button>
     </div>
     <div class="seen" id="seen"></div>
-    <div class="hint" id="hint">点一下麦克风开始，再点一下结束；第一次使用请允许麦克风</div>
+    <div class="hint" id="hint" data-i18n="video.initial_hint"></div>
   </footer>
 
   <div id="cam-wrap" class="cam-wrap">
     <video id="selfview" playsinline muted autoplay></video>
-    <span class="cam-tag">她看到的你</span>
+    <span class="cam-tag" data-i18n="video.camera_tag"></span>
   </div>
 
+  <script src="/i18n.js"></script>
   <script src="/static/live2d/lib/live2dcubismcore.min.js"></script>
   <script src="/static/live2d/lib/pixi.min.js"></script>
   <script src="/static/live2d/lib/index.min.js"></script>
@@ -90,13 +92,13 @@
 <script>if (location.search.indexOf("panel=1") >= 0) document.body.classList.add("panel");</script>
 <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function(){}); }</script>
 <div id="audiohelp" style="position:fixed;left:14px;bottom:14px;z-index:9999;display:flex;gap:8px;align-items:center;font-size:12px;color:#cbd5e1;">
-  <button id="audiotest" type="button" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(120,160,255,.5);background:rgba(20,30,50,.85);color:#dbeafe;cursor:pointer;">🔊 测试声音</button>
-  <span id="audiostate">音频未测试</span>
+  <button id="audiotest" type="button" style="padding:6px 12px;border-radius:10px;border:1px solid rgba(120,160,255,.5);background:rgba(20,30,50,.85);color:#dbeafe;cursor:pointer;" data-i18n="video.test_sound"></button>
+  <span id="audiostate" data-i18n="video.untested"></span>
 </div>
 <script>
 (function(){
   var btn=document.getElementById('audiotest'), st=document.getElementById('audiostate');
-  function show(t){ try{st.textContent=t;}catch(e){} }
+  function show(text){ try{st.removeAttribute('data-i18n'); st.textContent=text;}catch(e){} }
   btn.onclick=function(){
     try{
       var Ctx=window.AudioContext||window.webkitAudioContext;
@@ -109,10 +111,10 @@
         g.gain.value=0.08;
         o.connect(g); g.connect(ctx.destination);
         o.start(); o.stop(ctx.currentTime+0.35);
-        show('测试音已播出 · 上下文 '+ctx.state);
+        show(vt('video.sound_played', {state:ctx.state}));
       };
-      if(p&&p.then){p.then(go).catch(function(e){show('上下文被拒：'+e.name);});}else{go();}
-    }catch(e){ show('播放失败：'+(e.name||e)); }
+      if(p&&p.then){p.then(go).catch(function(e){show(vt('video.context_denied', {error:e.name}));});}else{go();}
+    }catch(e){ show(vt('video.playback_error', {error:e.name||e})); }
   };
 })();
 </script>
