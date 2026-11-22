@@ -143,6 +143,7 @@
   "setup.play": "▶ Play",
   "setup.error.ports": "Service ports must be unique integers from 1 to 65535",
   "setup.error.config_object": "The existing configuration must be a JSON object",
+  "setup.error.ambiguous_reconfiguration": "Several settings share an old value and cannot be replaced separately. No changes were applied. Use the new settings in a fresh project copy and keep your existing data.",
   "setup.enrollment_saved": "Saved %d samples. Voice/face recognition is provided by your bot system; enrollment samples stay in local data_dir.",
   "setup.astrbot.no_key": "No key entered; skipped AstrBot update",
   "setup.astrbot.config_missing": "AstrBot configuration not found (%s). Install AstrBot and run setup again.",

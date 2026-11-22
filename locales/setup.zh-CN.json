@@ -143,6 +143,7 @@
   "setup.play": "▶ 听",
   "setup.error.ports": "服务端口必须为1至65535且不能重复",
   "setup.error.config_object": "现有配置必须是JSON对象",
+  "setup.error.ambiguous_reconfiguration": "多个配置项共用旧值，无法安全地分别替换。未应用更改。请在全新项目副本中使用新配置，并保留原有数据。",
   "setup.enrollment_saved": "已保存 %d 个样本。注意：声纹/人脸匹配的识别代码在你的机器人系统里；开源包负责采集与登记，样本只存本地 data_dir，不进仓库。",
   "setup.astrbot.no_key": "没填 Key，跳过 AstrBot 写入",
   "setup.astrbot.config_missing": "没找到 AstrBot 配置（%s）——装好 AstrBot 后重跑配置即可自动写入",

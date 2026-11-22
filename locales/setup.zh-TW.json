@@ -143,6 +143,7 @@
   "setup.play": "▶ 聽",
   "setup.error.ports": "服務連接埠必須介於1至65535，且不得重複",
   "setup.error.config_object": "現有設定必須是JSON物件",
+  "setup.error.ambiguous_reconfiguration": "多個設定項目共用舊值，無法安全地分別取代。未套用變更。請在全新專案副本中使用新設定，並保留原有資料。",
   "setup.enrollment_saved": "已儲存 %d 個樣本。聲紋／臉部辨識由自己的機器人系統提供，樣本只儲存在本機 data_dir。",
   "setup.astrbot.no_key": "未填入 Key，略過 AstrBot 更新",
   "setup.astrbot.config_missing": "找不到 AstrBot 設定（%s），安裝後重新執行設定即可。",

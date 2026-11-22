@@ -72,6 +72,25 @@ class ConfigureRegressionTests(unittest.TestCase):
                     configure.apply_config(cfg)
             self.assertFalse(path.exists())
 
+    def test_ambiguous_previous_values_stop_before_any_write(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp/test') as directory:
+            base = Path(directory)
+            code = base / 'code'
+            code.mkdir()
+            source = code / 'service.py'
+            source.write_text('primary="<你的QQ号>"; secondary="<你的QQ号2>"', encoding='utf-8')
+            cfg = copy.deepcopy(configure.DEFAULTS)
+            cfg.update(data_dir=str(base / 'data'), qq='123456789', qq2='123456789', gate_token='fixture')
+            config_path = base / 'config.json'
+            with patch.multiple(configure, CODE=str(code), CFG_PATH=str(config_path)):
+                configure.apply_config(cfg)
+                original = source.read_bytes(), config_path.read_bytes()
+                cfg['qq2'] = '987654321'
+                with self.assertRaises(ValueError) as error:
+                    configure.apply_config(cfg)
+                self.assertNotIn('123456789', str(error.exception))
+                self.assertEqual((source.read_bytes(), config_path.read_bytes()), original)
+
     def test_check_setup_reports_duplicate_ports(self):
         with tempfile.TemporaryDirectory(dir=ROOT / "tmp/test") as directory:
             base = Path(directory)

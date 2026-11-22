@@ -406,10 +406,18 @@ def apply_config(cfg):
         if key in ("data_dir", "user_dir"):
             repl.extend(((old.replace("\\", "\\\\"), new.replace("\\", "\\\\")),
                          (old.replace("\\", "/"), new.replace("\\", "/"))))
-    replacements = dict(repl)
+    replacements = {}
+    for old, new in repl:
+        if replacements.setdefault(old, new) != new:
+            raise ValueError(t('setup.error.ambiguous_reconfiguration'))
     previous_ports = previous.get("ports") or {}
-    port_replacements = {str(previous_ports.get(key, num)): str(cfg["ports"][key])
-                         for num, key in PORT_KEY if int(cfg["ports"][key]) != int(previous_ports.get(key, num))}
+    port_replacements = {}
+    for num, key in PORT_KEY:
+        old, new = str(previous_ports.get(key, num)), str(cfg['ports'][key])
+        if old in replacements and replacements[old] != new:
+            raise ValueError(t('setup.error.ambiguous_reconfiguration'))
+        if old != new:
+            port_replacements[old] = new
     alternatives = [re.escape(old) for old in sorted(replacements, key=len, reverse=True)]
     if port_replacements:
         alternatives.append(r"(?<!\d)(?:" + "|".join(port_replacements) + r")(?!\d)")
