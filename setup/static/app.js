@@ -2,16 +2,25 @@
 (function () {
   "use strict";
 
+  var i18n = window.LysmorI18n;
+  var t = i18n.t;
+  function apiFetch(url, options) {
+    options = options || {};
+    options.headers = Object.assign({}, options.headers || {}, { "Accept-Language": i18n.language() });
+    return fetch(url, options);
+  }
+  function esc(value) { return String(value).replace(/[&<>"']/g, function (c) { return {"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]; }); }
+
   var $ = function (id) { return document.getElementById(id); };
   var PORT_NAMES = [
-    ["chat", "聊天"], ["gallery", "画廊"], ["video", "视频"], ["video_https", "视频HTTPS"],
-    ["life", "生命面板"], ["brain", "记忆星图"], ["house", "大平层"], ["qr", "扫码页"],
-    ["hub", "Hub总入口"], ["hands", "手部服务"], ["bot", "机器人消息"], ["panel", "机器人面板"],
-    ["napcat", "协议端口"]
+    ["chat", t("setup.dynamic.1")], ["gallery", t("setup.dynamic.2")], ["video", t("setup.dynamic.3")], ["video_https", t("setup.dynamic.4")],
+    ["life", t("setup.dynamic.5")], ["brain", t("setup.dynamic.6")], ["house", t("setup.dynamic.7")], ["qr", t("setup.dynamic.8")],
+    ["hub", t("setup.dynamic.9")], ["hands", t("setup.dynamic.10")], ["bot", t("setup.dynamic.11")], ["panel", t("setup.dynamic.12")],
+    ["napcat", t("setup.dynamic.13")]
   ];
 
-  var VOICE_SLOTS = ["第1句", "第2句", "第3句", "第4句", "第5句"];
-  var FACE_SLOTS = [["up", "上"], ["down", "下"], ["left", "左"], ["right", "右"], ["front", "正"]];
+  var VOICE_SLOTS = [t("setup.voice.first"), t("setup.voice.second"), t("setup.voice.third"), t("setup.voice.fourth"), t("setup.voice.fifth")];
+  var FACE_SLOTS = [["up", t("setup.face.up")], ["down", t("setup.face.down")], ["left", t("setup.face.left")], ["right", t("setup.face.right")], ["front", t("setup.face.front")]];
 
   // ---------- 声纹：浏览器录音 ----------
   var voiceData = {};
@@ -24,9 +33,9 @@
       var slot = "v" + (i + 1);
       var div = document.createElement("div");
       div.className = "slot";
-      div.innerHTML = "<span class='slot-name'>" + label + "</span>" +
-        "<button class='mini-btn' data-act='rec' data-slot='" + slot + "'>🎙 录</button>" +
-        "<button class='mini-btn' data-act='play' data-slot='" + slot + "'>▶ 听</button>" +
+      div.innerHTML = "<span class='slot-name' data-i18n='setup.voice." + ["first", "second", "third", "fourth", "fifth"][i] + "'>" + label + "</span>" +
+        "<button class='mini-btn' data-act='rec' data-slot='" + slot + "'>" + t("setup.record") + "</button>" +
+        "<button class='mini-btn' data-act='play' data-slot='" + slot + "'>" + t("setup.play") + "</button>" +
         "<span class='slot-st' data-slot='" + slot + "'></span>";
       vb.appendChild(div);
     });
@@ -36,7 +45,7 @@
       var key = pair[0], label = pair[1];
       var div = document.createElement("div");
       div.className = "slot";
-      div.innerHTML = "<span class='slot-name'>" + label + "</span>" +
+      div.innerHTML = "<span class='slot-name' data-i18n='setup.face." + key + "'>" + label + "</span>" +
         "<input type='file' accept='image/*' class='face-input' data-slot='" + key + "'>" +
         "<span class='slot-st' data-slot='" + key + "'></span>";
       fb.appendChild(div);
@@ -62,17 +71,17 @@
         var blob = new Blob(chunks, { type: "audio/webm" });
         var reader = new FileReader();
         reader.onload = function () {
-          voiceData[currentSlot] = reader.result;
-          setSlotState(currentSlot, "✅ 已录");
+          voiceData[slot] = reader.result;
+          setSlotState(slot, t("setup.recorded"));
         };
         reader.readAsDataURL(blob);
       };
       recorder.start();
-      setSlotState(slot, "🔴 录音中…再点一下停止");
+      setSlotState(slot, t("setup.recording"));
       var recBtn = document.querySelector("[data-act='rec'][data-slot='" + slot + "']");
-      recBtn.textContent = "⏹ 停";
+      recBtn.textContent = t("setup.stop");
     }).catch(function (e) {
-      setSlotState(slot, "录音失败：" + e.message);
+      setSlotState(slot, t("setup.dynamic.14") + e.message);
     });
   }
 
@@ -88,12 +97,12 @@
   }
 
   document.addEventListener("click", function (e) {
-    var t = e.target;
-    if (t.dataset && t.dataset.act === "rec") {
-      if (recorder && currentSlot === t.dataset.slot) { stopRec(); }
-      else { startRec(t.dataset.slot); }
-    } else if (t.dataset && t.dataset.act === "play") {
-      playSlot(t.dataset.slot);
+    var target = e.target;
+    if (target.dataset && target.dataset.act === "rec") {
+      if (recorder && currentSlot === target.dataset.slot) { stopRec(); }
+      else { startRec(target.dataset.slot); }
+    } else if (target.dataset && target.dataset.act === "play") {
+      playSlot(target.dataset.slot);
     }
   });
 
@@ -105,7 +114,7 @@
       var reader = new FileReader();
       reader.onload = function () {
         faceData[slot] = reader.result;
-        setSlotState(slot, "✅ 已选");
+        setSlotState(slot, t("setup.selected"));
       };
       reader.readAsDataURL(f);
     }
@@ -125,7 +134,7 @@
   }
 
   function refreshDefaults() {
-    fetch("/api/defaults").then(function (r) { return r.json(); }).then(function (d) {
+    apiFetch("/api/defaults").then(function (r) { return r.json(); }).then(function (d) {
       $("data_dir").value = d.data_dir || "";
       $("user_dir").value = d.user_dir || "";
       $("user_qq").value = d.qq || "";
@@ -135,7 +144,7 @@
       $("model").value = (d.llm && d.llm.model) || "deepseek-chat";
       buildPortInputs(d);
       // 自动探测 AstrBot
-      fetch("/api/autodetect").then(function (r2) { return r2.json(); }).then(function (det) {
+      apiFetch("/api/autodetect").then(function (r2) { return r2.json(); }).then(function (det) {
         if (det.bot_instance) {
           $("bot_instance").value = det.bot_instance;
           $("bot_panel").value = det.bot_panel;
@@ -143,33 +152,33 @@
       }).catch(function () {});
     }).catch(function (e) {
       $("quick_result").hidden = false;
-      $("quick_result").innerHTML = "加载默认值失败：" + e.message;
+      $("quick_result").innerHTML = t("setup.dynamic.15") + esc(e.message);
     });
   }
 
   function runCheck(done) {
     var box = $("checkresult");
     box.hidden = false;
-    box.innerHTML = "正在体检…";
-    fetch("/api/check").then(function (r) { return r.json(); }).then(function (d) {
+    box.innerHTML = t("setup.checking");
+    apiFetch("/api/check").then(function (r) { return r.json(); }).then(function (d) {
       var items = d.checks || [];
       var html = "";
       var fail = 0, warn = 0;
       items.forEach(function (c) {
-        var label = { ok: "✅ 通过", warn: "⚠️ 注意", fail: "❌ 要修", info: "💡 提示" }[c.level] || c.level;
+        var label = { ok: t("setup.check.pass"), warn: t("setup.check.warn"), fail: t("setup.check.fail"), info: t("setup.check.info") }[c.level] || c.level;
         if (c.level === "fail") { fail++; }
         if (c.level === "warn") { warn++; }
-        html += '<div class="item"><span class="mark ' + c.level + '">' + label + "</span>" +
-          "<span><b>" + c.name + "</b> <span class='detail'>" + c.detail + "</span></span></div>";
-        if (c.hint) { html += '<div class="hint">→ ' + c.hint + "</div>"; }
+        html += '<div class="item"><span class="mark ' + esc(c.level) + '">' + label + "</span>" +
+          "<span><b>" + esc(c.name) + "</b> <span class='detail'>" + esc(c.detail) + "</span></span></div>";
+        if (esc(c.hint)) { html += '<div class="hint">→ ' + esc(c.hint) + "</div>"; }
       });
       if (fail === 0 && warn === 0) {
-        html = '<div class="allgreen">✅ 全部绿灯，一切就绪！</div>' + html;
+        html = t("setup.dynamic.18") + html;
       }
       box.innerHTML = html;
       if (done) { done(fail, warn); }
     }).catch(function (e) {
-      box.innerHTML = "体检失败：" + e.message;
+      box.innerHTML = t("setup.dynamic.16") + esc(e.message);
       if (done) { done(1, 0); }
     });
   }
@@ -179,9 +188,9 @@
     if (auto !== "check") { return; }
     runCheck(function (fail, warn) {
       if (fail === 0 && warn === 0) {
-        fetch("/api/huburl").then(function (r) { return r.json(); }).then(function (d) {
+        apiFetch("/api/huburl").then(function (r) { return r.json(); }).then(function (d) {
           if (!d.url) { return; }
-          $("checkresult").innerHTML += '<div class="hint">🚀 马上带你进总入口…</div>';
+          $("checkresult").innerHTML += t("setup.dynamic.19");
           setTimeout(function () { location.href = d.url; }, 1500);
         });
       }
@@ -192,16 +201,16 @@
   $("envsetup").addEventListener("click", function () {
     var box = $("env_result");
     box.hidden = false;
-    box.innerHTML = "正在检查与安装（可能要几分钟）…";
-    fetch("/api/envsetup", { method: "POST" }).then(function (r) { return r.json(); }).then(function (d) {
+    box.innerHTML = t("setup.installing");
+    apiFetch("/api/envsetup", { method: "POST" }).then(function (r) { return r.json(); }).then(function (d) {
       var html = "";
       (d.results || []).forEach(function (it) {
         html += "<div class='item'><span class='mark " + (it.ok ? "ok" : "fail") + "'>" +
-          (it.ok ? "✅" : "❌") + "</span><span><b>" + it.name + "</b> <span class='detail'>" + it.detail + "</span></span></div>";
+          (it.ok ? "✅" : "❌") + "</span><span><b>" + esc(it.name) + "</b> <span class='detail'>" + esc(it.detail) + "</span></span></div>";
       });
       box.innerHTML = html;
     }).catch(function (e) {
-      box.innerHTML = "装机请求失败：" + e.message;
+      box.innerHTML = t("setup.dynamic.17") + esc(e.message);
     });
   });
 
@@ -209,11 +218,12 @@
   $("autoconfig").addEventListener("click", function () {
     var btn = $("autoconfig");
     btn.disabled = true;
-    btn.textContent = "正在自动配置…";
-    fetch("/api/autoconfig", {
+    btn.textContent = t("setup.configuring");
+    apiFetch("/api/autoconfig", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        language: i18n.language(),
         fish_qq: $("fish_qq").value,
         user_qq: $("user_qq").value,
         api_key: $("api_key").value,
@@ -228,25 +238,25 @@
         var en = d.enroll || {};
         box.className = "";
         box.innerHTML =
-          "<b>✅ 自动配置完成！</b><br>" +
-          "重写 " + d.files + " 个文件 / " + d.repl + " 处；口令已自动生成。<br>" +
-          (det.bot_instance ? "自动找到 AstrBot 实例：" + det.bot_instance + "<br>" : "") +
-          "<b>大脑</b>：" + (d.astrbot || "") + "<br>" +
-          "<b>声纹/脸</b>：" + (en.note || "未提交样本") + "<br><br>" +
-          "<b>下一步</b>：双击 打开入口.cmd 开始使用。";
+          t("setup.dynamic.20") +
+          t("setup.dynamic.21") + d.files + t("setup.dynamic.22") + d.repl + t("setup.dynamic.23") +
+          (esc(det.bot_instance) ? t("setup.dynamic.24") + esc(det.bot_instance) + "<br>" : "") +
+          t("setup.dynamic.25") + esc(d.astrbot || "") + "<br>" +
+          t("setup.dynamic.26") + esc(en.note || t("setup.no_samples")) + "<br><br>" +
+          t("setup.dynamic.27");
       } else {
         box.className = "err";
-        box.innerHTML = "<b>❌ 出错了：</b>" + (d.error || "未知错误");
+        box.innerHTML = t("setup.dynamic.28") + esc(d.error || t("setup.unknown_error"));
       }
       runCheck();
     }).catch(function (e) {
       var box = $("quick_result");
       box.hidden = false;
       box.className = "err";
-      box.innerHTML = "<b>❌ 连不上配置服务：</b>" + e.message;
+      box.innerHTML = t("setup.dynamic.29") + esc(e.message);
     }).finally(function () {
       btn.disabled = false;
-      btn.textContent = "⚡ 开始自动配置";
+      btn.textContent = t("setup.text.14");
     });
   });
 
@@ -272,17 +282,17 @@
       var input = document.getElementById(IMP_INPUTS[kind]);
       var st = document.getElementById("st_" + kind);
       var files = input.files;
-      if (!files || !files.length) { st.textContent = "先选文件"; return; }
-      st.textContent = "读取中…";
+      if (!files || !files.length) { st.textContent = t("setup.select_files"); return; }
+      st.textContent = t("setup.reading");
       readAll(files).then(function (list) {
-        st.textContent = "上传中（" + list.length + " 个文件）…";
-        return fetch("/api/import_asset", {
+        st.textContent = t("setup.dynamic.30") + list.length + t("setup.dynamic.31");
+        return apiFetch("/api/import_asset", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kind: kind, files: list })
         });
       }).then(function (r) { return r.json(); }).then(function (d) {
-        st.textContent = d.ok ? "✅ 已导入 " + d.count + " 个文件" : "❌ " + (d.error || "失败");
+        st.textContent = d.ok ? t("setup.dynamic.32") + d.count + t("setup.dynamic.33") : "❌ " + (d.error || t("setup.failed"));
       }).catch(function (e) {
         st.textContent = "❌ " + e.message;
       });
@@ -294,7 +304,7 @@
     var adv = $("advanced");
     var show = adv.hidden;
     adv.hidden = !show;
-    $("adv-toggle").textContent = show ? "⚙️ 详细设置（手动配置，收起）" : "⚙️ 详细设置（手动配置，点开）";
+    $("adv-toggle").textContent = show ? t("setup.advanced.collapse") : t("setup.text.30");
   });
 
   $("gen").addEventListener("click", function () {
@@ -317,11 +327,13 @@
       ports[el.dataset.key] = parseInt(el.value, 10) || 0;
     });
     var payload = {
+      language: i18n.language(),
       data_dir: $("data_dir").value,
       user_dir: $("user_dir").value,
       qq: $("user_qq").value,
       qq2: $("user_qq").value,
-      fish_qq: $("fish_qq").value,
+      language: i18n.language(),
+        fish_qq: $("fish_qq").value,
       bot_instance: $("bot_instance").value,
       bot_panel: $("bot_panel").value,
       gate_token: $("gate_token").value,
@@ -330,8 +342,8 @@
     };
     var btn = $("apply");
     btn.disabled = true;
-    btn.textContent = "正在应用…";
-    fetch("/api/configure", {
+    btn.textContent = t("setup.applying");
+    apiFetch("/api/configure", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -340,27 +352,27 @@
       box.hidden = false;
       if (d.ok) {
         box.className = "";
-        box.innerHTML = "<b>✅ 配置完成！</b><br>重写了 " + d.files + " 个文件 / " + d.repl + " 处。<br>" +
-          "<b>大脑</b>：" + (d.astrbot || "") + "<br><br><b>下一步</b>：双击 打开入口.cmd 开始使用。";
+        box.innerHTML = t("setup.dynamic.34") + d.files + t("setup.dynamic.22") + d.repl + t("setup.dynamic.35") +
+          t("setup.dynamic.25") + esc(d.astrbot || "") + t("setup.dynamic.36");
         runCheck();
       } else {
         box.className = "err";
-        box.innerHTML = "<b>❌ 出错了：</b>" + (d.error || "未知错误");
+        box.innerHTML = t("setup.dynamic.28") + esc(d.error || t("setup.unknown_error"));
       }
     }).catch(function (e) {
       var box = $("result");
       box.hidden = false;
       box.className = "err";
-      box.innerHTML = "<b>❌ 连不上配置服务：</b>" + e.message;
+      box.innerHTML = t("setup.dynamic.29") + esc(e.message);
     }).finally(function () {
       btn.disabled = false;
-      btn.textContent = "🚀 一键应用";
+      btn.textContent = t("setup.text.47");
     });
   });
 
   // ---------- 身份词 / 人格提示词优化 ----------
   function loadIdentity() {
-    fetch("/api/identity").then(function (r) { return r.json(); }).then(function (d) {
+    apiFetch("/api/identity").then(function (r) { return r.json(); }).then(function (d) {
       if (d.identity) { $("identity").value = d.identity; }
       if (d.persona) { $("persona").value = d.persona; }
     }).catch(function () {});
@@ -369,11 +381,11 @@
   $("opt_identity").addEventListener("click", function () {
     var btn = $("opt_identity");
     var st = $("identity_st");
-    if (!$("identity").value.trim()) { st.textContent = "先写一段身份词"; return; }
+    if (!$("identity").value.trim()) { st.textContent = t("setup.identity.required"); return; }
     btn.disabled = true;
-    btn.textContent = "优化中…（调用你的 API）";
-    st.textContent = "正在用你的 API 生成人格提示词…";
-    fetch("/api/optimize_identity", {
+    btn.textContent = t("setup.identity.optimizing");
+    st.textContent = t("setup.identity.generating");
+    apiFetch("/api/optimize_identity", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -385,15 +397,15 @@
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d.ok) {
         $("persona").value = d.persona;
-        st.textContent = "✅ 已生成，可手动修改后再保存";
+        st.textContent = t("setup.identity.generated");
       } else {
-        st.textContent = "❌ " + (d.error || "优化失败");
+        st.textContent = "❌ " + (d.error || t("setup.identity.failed"));
       }
     }).catch(function (e) {
-      st.textContent = "❌ 连不上配置服务：" + e.message;
+      st.textContent = t("setup.dynamic.37") + e.message;
     }).finally(function () {
       btn.disabled = false;
-      btn.textContent = "✨ 用我的 API 优化成提示词";
+      btn.textContent = t("setup.text.10");
     });
   });
 
@@ -401,21 +413,35 @@
     var btn = $("save_identity");
     var st = $("identity_st");
     btn.disabled = true;
-    btn.textContent = "保存中…";
-    fetch("/api/save_identity", {
+    btn.textContent = t("setup.saving");
+    apiFetch("/api/save_identity", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identity: $("identity").value, persona: $("persona").value })
     }).then(function (r) { return r.json(); }).then(function (d) {
-      st.textContent = d.ok ? "✅ 已保存为她的身份（video/config.json）" : "❌ " + (d.error || "保存失败");
+      st.textContent = d.ok ? t("setup.identity.saved") : "❌ " + (d.error || t("setup.save_failed"));
     }).catch(function (e) {
-      st.textContent = "❌ 连不上配置服务：" + e.message;
+      st.textContent = t("setup.dynamic.37") + e.message;
     }).finally(function () {
       btn.disabled = false;
-      btn.textContent = "💾 保存为她的身份";
+      btn.textContent = t("setup.text.11");
     });
   });
 
+  i18n.mountLanguageSelector(document.getElementById("language-selector"));
+  i18n.applyText(document);
+  window.addEventListener("languagechange", function () {
+    i18n.applyText(document);
+    PORT_NAMES.forEach(function (pair) {
+      var input = document.querySelector("#ports input[data-key='" + pair[0] + "']");
+      if (input && input.previousSibling) input.previousSibling.textContent = t("setup.dynamic." + (PORT_NAMES.indexOf(pair) + 1)) + " ";
+    });
+    document.querySelectorAll("[data-act='rec']").forEach(function (button) {
+      button.textContent = recorder && currentSlot === button.dataset.slot ? t("setup.stop") : t("setup.record");
+    });
+    document.querySelectorAll("[data-act='play']").forEach(function (button) { button.textContent = t("setup.play"); });
+    $("adv-toggle").textContent = $("advanced").hidden ? t("setup.text.30") : t("setup.advanced.collapse");
+  });
   buildEnroll();
   refreshDefaults();
   loadIdentity();

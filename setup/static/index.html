@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>一键配置向导</title>
+<title data-i18n="setup.text.1">一键配置向导</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
+    <div id="language-selector"></div>
     <div class="head-text">
-      <h1>🛠 一键配置向导</h1>
-      <p>第一步填账号 → 第二步点自动配置 → 完成。软件和设置全自动，你只管账号。</p>
+      <h1><span data-i18n="setup.text.2">🛠 一键配置向导</span></h1>
+      <p><span data-i18n="setup.text.3">第一步填账号 → 第二步点自动配置 → 完成。软件和设置全自动，你只管账号。</span></p>
     </div>
     <img class="ds-logo" src="deepseek-logo.ico" alt="DeepSeek" title="Powered by DeepSeek">
   </header>
@@ -20,35 +21,35 @@
 
       <!-- A. 账号清单（需要你自己注册/准备） -->
       <section class="card">
-        <h2>📝 账号清单（需要你自己注册，填进来就行）</h2>
+        <h2><span data-i18n="setup.text.4">📝 账号清单（需要你自己注册，填进来就行）</span></h2>
         <div class="accounts">
-          <label>鱼的 QQ 号 <input id="fish_qq" placeholder="她登录用的 QQ（扫码时用）"></label>
-          <label>你的 QQ 号 <input id="user_qq" placeholder="她靠这个认出是你"></label>
-          <label>DeepSeek API Key <input id="api_key" placeholder="sk-…（platform.deepseek.com 注册+充值+创建）"></label>
+          <label><span data-i18n="setup.text.5">鱼的 QQ 号</span><input id="fish_qq" placeholder="她登录用的 QQ（扫码时用）" data-i18n-placeholder="setup.placeholder.59"></label>
+          <label><span data-i18n="setup.text.6">你的 QQ 号</span><input id="user_qq" placeholder="她靠这个认出是你" data-i18n-placeholder="setup.placeholder.60"></label>
+          <label>DeepSeek API Key <input id="api_key" placeholder="sk-…（platform.deepseek.com 注册+充值+创建）" data-i18n-placeholder="setup.placeholder.61"></label>
         </div>
-        <p class="tiny">网盘/蒲公英/证书等可选账号见「⚙️ 详细设置」与 docs/登入清单.md。</p>
+        <p class="tiny"><span data-i18n="setup.text.7">网盘/蒲公英/证书等可选账号见「⚙️ 详细设置」与 docs/登入清单.md。</span></p>
       </section>
 
       <!-- 🧬 身份词 -->
       <section class="card">
-        <h2>🧬 身份词（只用来确认身份，不是人格提示词）</h2>
-        <p class="tiny">写清楚：她叫什么、你们怎么称呼对方、你和她是什么关系、有哪些底线。只写「身份」，性格留空——下一步用你自己的 API 自动优化。</p>
-        <textarea id="identity" rows="4" placeholder="例：她叫小满，是住在电脑里的女孩；我叫她满满，她叫我爸爸；我们是家人，不是恋爱关系；不写真实人像、不做 NSFW。"></textarea>
+        <h2><span data-i18n="setup.text.8">🧬 身份词（只用来确认身份，不是人格提示词）</span></h2>
+        <p class="tiny"><span data-i18n="setup.text.9">写清楚：她叫什么、你们怎么称呼对方、你和她是什么关系、有哪些底线。只写「身份」，性格留空——下一步用你自己的 API 自动优化。</span></p>
+        <textarea id="identity" rows="4" placeholder="例：她叫小满，是住在电脑里的女孩；我叫她满满，她叫我爸爸；我们是家人，不是恋爱关系；不写真实人像、不做 NSFW。" data-i18n-placeholder="setup.placeholder.62"></textarea>
         <div class="btn-row">
-          <button id="opt_identity" class="check" type="button">✨ 用我的 API 优化成提示词</button>
-          <button id="save_identity" class="apply" type="button">💾 保存为她的身份</button>
+          <button id="opt_identity" class="check" type="button"><span data-i18n="setup.text.10">✨ 用我的 API 优化成提示词</span></button>
+          <button id="save_identity" class="apply" type="button"><span data-i18n="setup.text.11">💾 保存为她的身份</span></button>
         </div>
         <div id="identity_st" class="tiny"></div>
-        <textarea id="persona" rows="8" placeholder="优化后的人格提示词会出现在这里，可手动修改后再保存。"></textarea>
+        <textarea id="persona" rows="8" placeholder="优化后的人格提示词会出现在这里，可手动修改后再保存。" data-i18n-placeholder="setup.placeholder.63"></textarea>
       </section>
 
       <!-- B. 一键自动配置 -->
       <section class="card hero">
-        <h2>⚡ 一键自动配置</h2>
-        <p class="tiny">自动装机（Python/Ollama/ffmpeg/模型）+ 自动探测 AstrBot + 自动填目录/端口/口令 + 把上面的账号匹配进去。</p>
+        <h2><span data-i18n="setup.text.12">⚡ 一键自动配置</span></h2>
+        <p class="tiny"><span data-i18n="setup.text.13">自动装机（Python/Ollama/ffmpeg/模型）+ 自动探测 AstrBot + 自动填目录/端口/口令 + 把上面的账号匹配进去。</span></p>
         <div class="btn-row">
-          <button id="autoconfig" class="apply">⚡ 开始自动配置</button>
-          <button id="envsetup" class="check">🔧 自动装机</button>
+          <button id="autoconfig" class="apply"><span data-i18n="setup.text.14">⚡ 开始自动配置</span></button>
+          <button id="envsetup" class="check"><span data-i18n="setup.text.15">🔧 自动装机</span></button>
         </div>
         <div id="env_result" hidden></div>
         <div id="quick_result" hidden></div>
@@ -56,89 +57,88 @@
 
       <!-- C. 声纹 + 人脸（可选） -->
       <section class="card">
-        <h2>🔊📷 声纹与脸（可选，让她认得你的声音和样子）</h2>
+        <h2><span data-i18n="setup.text.16">🔊📷 声纹与脸（可选，让她认得你的声音和样子）</span></h2>
         <div class="enroll-row">
           <div class="enroll-col">
-            <b class="tiny">声纹：录 5 段你的话（每段 3~5 秒）</b>
+            <b class="tiny"><span data-i18n="setup.text.17">声纹：录 5 段你的话（每段 3~5 秒）</span></b>
             <div id="voice_slots"></div>
           </div>
           <div class="enroll-col">
-            <b class="tiny">人脸：5 张照片（上 / 下 / 左 / 右 / 正）</b>
+            <b class="tiny"><span data-i18n="setup.text.18">人脸：5 张照片（上 / 下 / 左 / 右 / 正）</span></b>
             <div id="face_slots"></div>
           </div>
         </div>
-        <p class="tiny">样本只存在你本地数据目录，不进仓库；识别代码在你自己的机器人系统里。</p>
+        <p class="tiny"><span data-i18n="setup.text.19">样本只存在你本地数据目录，不进仓库；识别代码在你自己的机器人系统里。</span></p>
       </section>
 
       <!-- D. 素材导入（可选） -->
       <section class="card">
-        <h2>🎨 素材导入（可选：导入你自己的 Live2D / 表情包 / 背景 / 桌宠形象）</h2>
+        <h2><span data-i18n="setup.text.20">🎨 素材导入（可选：导入你自己的 Live2D / 表情包 / 背景 / 桌宠形象）</span></h2>
         <div class="import-row">
-          <span class="imp-label">Live2D 模型</span>
+          <span class="imp-label"><span data-i18n="setup.text.21">Live2D 模型</span></span>
           <input type="file" id="imp_live2d" webkitdirectory multiple>
-          <button class="mini-btn" data-imp="live2d" type="button">导入</button>
+          <button class="mini-btn" data-imp="live2d" type="button"><span data-i18n="setup.text.22">导入</span></button>
           <span class="imp-st" id="st_live2d"></span>
         </div>
         <div class="import-row">
-          <span class="imp-label">表情包</span>
+          <span class="imp-label"><span data-i18n="setup.text.23">表情包</span></span>
           <input type="file" id="imp_stickers" multiple accept="image/*">
-          <button class="mini-btn" data-imp="stickers" type="button">导入</button>
+          <button class="mini-btn" data-imp="stickers" type="button"><span data-i18n="setup.text.24">导入</span></button>
           <span class="imp-st" id="st_stickers"></span>
         </div>
         <div class="import-row">
-          <span class="imp-label">视频通话背景</span>
+          <span class="imp-label"><span data-i18n="setup.text.25">视频通话背景</span></span>
           <input type="file" id="imp_background" multiple accept="image/*,video/*">
-          <button class="mini-btn" data-imp="background" type="button">导入</button>
+          <button class="mini-btn" data-imp="background" type="button"><span data-i18n="setup.text.26">导入</span></button>
           <span class="imp-st" id="st_background"></span>
         </div>
         <div class="import-row">
-          <span class="imp-label">桌宠形象</span>
+          <span class="imp-label"><span data-i18n="setup.text.27">桌宠形象</span></span>
           <input type="file" id="imp_pet" webkitdirectory multiple>
-          <button class="mini-btn" data-imp="pet" type="button">导入</button>
+          <button class="mini-btn" data-imp="pet" type="button"><span data-i18n="setup.text.28">导入</span></button>
           <span class="imp-st" id="st_pet"></span>
         </div>
-        <p class="tiny">素材只存在本地数据目录；不要导入没有授权的第三方素材。</p>
+        <p class="tiny"><span data-i18n="setup.text.29">素材只存在本地数据目录；不要导入没有授权的第三方素材。</span></p>
       </section>
 
       <!-- 详细设置折叠 -->
-      <button id="adv-toggle" class="mini-btn wide" type="button">⚙️ 详细设置（手动配置，点开）</button>
+      <button id="adv-toggle" class="mini-btn wide" type="button"><span data-i18n="setup.text.30">⚙️ 详细设置（手动配置，点开）</span></button>
       <div id="advanced" hidden>
         <section class="card">
-          <h2>① 目录</h2>
-          <label>数据目录 <input id="data_dir" placeholder="记忆/代码/状态放这里"></label>
-          <label>用户目录 <input id="user_dir"></label>
+          <h2><span data-i18n="setup.text.31">① 目录</span></h2>
+          <label><span data-i18n="setup.text.32">数据目录</span><input id="data_dir" placeholder="记忆/代码/状态放这里" data-i18n-placeholder="setup.placeholder.64"></label>
+          <label><span data-i18n="setup.text.33">用户目录</span><input id="user_dir"></label>
         </section>
         <section class="card">
-          <h2>② 身份</h2>
-          <label>机器人实例 UUID（自动探测到的话不用动） <input id="bot_instance"></label>
-          <label>机器人面板端口 <input id="bot_panel" type="number"></label>
-          <button id="open-panel" class="mini-btn" type="button">🧠 打开 AstrBot 管理面板</button>
-          <p class="tiny">在管理面板里：模型服务商选 DeepSeek → 填上面账号清单里的 Key → 保存。</p>
+          <h2><span data-i18n="setup.text.34">② 身份</span></h2>
+          <label><span data-i18n="setup.text.35">机器人实例 UUID（自动探测到的话不用动）</span><input id="bot_instance"></label>
+          <label><span data-i18n="setup.text.36">机器人面板端口</span><input id="bot_panel" type="number"></label>
+          <button id="open-panel" class="mini-btn" type="button"><span data-i18n="setup.text.37">🧠 打开 AstrBot 管理面板</span></button>
+          <p class="tiny"><span data-i18n="setup.text.38">在管理面板里：模型服务商选 DeepSeek → 填上面账号清单里的 Key → 保存。</span></p>
         </section>
         <section class="card">
-          <h2>③ 大脑（DeepSeek API）</h2>
-          <label>API 地址 <input id="base_url"></label>
-          <label>模型
-            <select id="model">
-              <option value="deepseek-chat">deepseek-chat（日常，快）</option>
-              <option value="deepseek-reasoner">deepseek-reasoner（深度思考，慢）</option>
+          <h2><span data-i18n="setup.text.39">③ 大脑（DeepSeek API）</span></h2>
+          <label><span data-i18n="setup.text.40">API 地址</span><input id="base_url"></label>
+          <label><span data-i18n="setup.text.41">模型</span><select id="model">
+              <option value="deepseek-chat" data-i18n="setup.model.chat">deepseek-chat（日常，快）</option>
+              <option value="deepseek-reasoner" data-i18n="setup.model.reasoner">deepseek-reasoner（深度思考，慢）</option>
             </select>
           </label>
         </section>
         <section class="card">
-          <h2>④ 口令</h2>
+          <h2><span data-i18n="setup.text.44">④ 口令</span></h2>
           <div class="row">
-            <input id="gate_token" placeholder="留空 = 自动生成">
-            <button id="gen" type="button">🎲 自动生成</button>
+            <input id="gate_token" placeholder="留空 = 自动生成" data-i18n-placeholder="setup.placeholder.65">
+            <button id="gen" type="button"><span data-i18n="setup.text.45">🎲 自动生成</span></button>
           </div>
         </section>
         <section class="card">
-          <h2>⑤ 端口</h2>
+          <h2><span data-i18n="setup.text.46">⑤ 端口</span></h2>
           <div id="ports" class="ports"></div>
         </section>
         <div class="btn-row">
-          <button id="apply" class="apply">🚀 一键应用</button>
-          <button id="check" class="check">🔍 检查配置</button>
+          <button id="apply" class="apply"><span data-i18n="setup.text.47">🚀 一键应用</span></button>
+          <button id="check" class="check"><span data-i18n="setup.text.48">🔍 检查配置</span></button>
         </div>
         <section id="result" hidden></section>
       </div>
@@ -147,15 +147,16 @@
     </div>
 
     <aside class="tips">
-      <h2>💬 说人话版讲解</h2>
-      <div class="tip"><h3>📝 账号清单</h3><p>要"注册"的只有这些：鱼的 QQ、你的 QQ、DeepSeek Key（平台注册+充一点点钱）。填进去，脚本自动匹配。</p></div>
-      <div class="tip"><h3>⚡ 自动配置</h3><p>点一下：软件自动装（缺什么装什么）、AstrBot 自动找、目录/端口/口令自动填、账号自动接好。</p></div>
-      <div class="tip"><h3>🔊📷 声纹与脸</h3><p>想让她"听出是你、认出是你"，就录 5 句话、拍 5 张脸（上/下/左/右/正）。可选，先跳过也行。</p></div>
-      <div class="tip"><h3>🔧 自动装机</h3><p>只装软件和模型（Python/Ollama/ffmpeg + 2 个模型），不要账号。装完再点自动配置。</p></div>
-      <div class="tip mini">⏱ 全程 30~40 分钟（大头是模型下载）。之后每天双击图标就行。</div>
+      <h2><span data-i18n="setup.text.49">💬 说人话版讲解</span></h2>
+      <div class="tip"><h3><span data-i18n="setup.text.50">📝 账号清单</span></h3><p><span data-i18n="setup.text.51">要"注册"的只有这些：鱼的 QQ、你的 QQ、DeepSeek Key（平台注册+充一点点钱）。填进去，脚本自动匹配。</span></p></div>
+      <div class="tip"><h3><span data-i18n="setup.text.52">⚡ 自动配置</span></h3><p><span data-i18n="setup.text.53">点一下：软件自动装（缺什么装什么）、AstrBot 自动找、目录/端口/口令自动填、账号自动接好。</span></p></div>
+      <div class="tip"><h3><span data-i18n="setup.text.54">🔊📷 声纹与脸</span></h3><p><span data-i18n="setup.text.55">想让她"听出是你、认出是你"，就录 5 句话、拍 5 张脸（上/下/左/右/正）。可选，先跳过也行。</span></p></div>
+      <div class="tip"><h3><span data-i18n="setup.text.56">🔧 自动装机</span></h3><p><span data-i18n="setup.text.57">只装软件和模型（Python/Ollama/ffmpeg + 2 个模型），不要账号。装完再点自动配置。</span></p></div>
+      <div class="tip mini"><span data-i18n="setup.text.58">⏱ 全程 30~40 分钟（大头是模型下载）。之后每天双击图标就行。</span></div>
     </aside>
   </main>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

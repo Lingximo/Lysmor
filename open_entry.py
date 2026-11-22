@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import webbrowser
+from i18n import t
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CODE = os.path.join(ROOT, "code")
@@ -23,10 +24,10 @@ CFG_PATH = os.path.join(ROOT, "config.json")
 # (显示名, 脚本相对路径, 端口配置键)
 MODULES = [
     ("Hub", "hub/server.py", "hub"),
-    ("网页聊天", "webchat/server.py", "chat"),
-    ("视频通话", "video/server.py", "video"),
-    ("生命面板", "lifeviz/server.py", "life"),
-    ("记忆星图", "brainviz/server.py", "brain"),
+    ("setup.label.webchat", "webchat/server.py", "chat"),
+    ("setup.label.video", "video/server.py", "video"),
+    ("setup.label.life", "lifeviz/server.py", "life"),
+    ("setup.label.brain", "brainviz/server.py", "brain"),
 ]
 
 
@@ -105,9 +106,9 @@ def run_and_print_check():
                 fails += 1
             elif c["level"] == "warn":
                 warns += 1
-        print("体检：FAIL=%d WARN=%d" % (fails, warns))
+        print(t('setup.entry.check_result') % (fails, warns))
     except Exception as exc:  # noqa: BLE001
-        print("体检跑不了：%s" % exc)
+        print(t('setup.entry.check_failed') % exc)
 
 
 def main():
@@ -116,7 +117,7 @@ def main():
 
     cfg = load_cfg()
     if not cfg:
-        print("还没配置过 → 自动打开配置向导。")
+        print(t('setup.entry.not_configured'))
         if not listening(8090):
             start(os.path.join(ROOT, "setup", "server.py"), 8090)
         time.sleep(1.0)
@@ -126,6 +127,8 @@ def main():
     ports = cfg.get("ports") or {}
     started = []
     for name, rel, key in MODULES:
+        if name.startswith("setup."):
+            name = t(name)
         script = os.path.join(CODE, rel)
         if not os.path.exists(script):
             continue
@@ -139,9 +142,9 @@ def main():
     if os.path.exists(house_script) and os.path.exists(os.path.join(CODE, "houseviz", "plan.json")):
         port = int(ports.get("house") or 8007)
         if start(house_script, port):
-            started.append("大平层")
+            started.append(t('setup.label.house'))
 
-    print("本次启动：%s" % ("、".join(started) if started else "服务都已在运行"))
+    print(t('setup.entry.started') % ("、".join(started) if started else t('setup.entry.all_running')))
     run_and_print_check()
 
     # 打开"体检页"：全绿自动进总入口，有黄/红灯就停在体检页提示怎么修
