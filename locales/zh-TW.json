@@ -1,0 +1,8 @@
+{
+  "common.language": "語言",
+  "common.loading": "載入中…",
+  "common.error": "發生錯誤：{message}",
+  "common.save": "儲存",
+  "common.cancel": "取消",
+  "common.confirm": "確認"
+}
