@@ -1,4 +1,25 @@
-﻿// 前端诊断（2026-11-09）：把错误和关键动作用 sendBeacon 报到服务端，
+const videoText = new Map();
+const vt = (key, vars) => {
+  const text = window.LysmorI18n.t(key, vars);
+  videoText.set(text, {key, vars});
+  if (videoText.size > 200) videoText.delete(videoText.keys().next().value);
+  return text;
+};
+const refreshVideoText = text => {
+  const entry = videoText.get(text);
+  if (!entry) return text;
+  const vars = entry.vars && Object.fromEntries(Object.entries(entry.vars).map(([key, value]) => [key, typeof value === 'string' && videoText.has(value) ? refreshVideoText(value) : value]));
+  return vt(entry.key, vars);
+};
+window.LysmorI18n.applyText();
+const videoLiveIds = ['status', 'perm-txt', 'meter-text', 'test-mic', 'mic-label', 'cam-label', 'cam-state', 'hint', 'audiostate'];
+for (const id of videoLiveIds) {
+  const node = document.getElementById(id);
+  if (!node) continue;
+  const key = node.getAttribute('data-i18n');
+  if (key) { videoText.set(node.textContent, {key}); node.removeAttribute('data-i18n'); }
+}
+// 前端诊断（2026-11-09）：把错误和关键动作用 sendBeacon 报到服务端，
 // 这样即使手机/夸克看不到控制台，也能知道到底哪一步断了。
 (function () {
   function report(tag, msg) {
@@ -202,7 +223,7 @@
     const bar = document.getElementById('mic-level');
     const label = document.getElementById('meter-text');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      label.textContent = '不支持检测';
+      label.textContent = vt('video.unsupported_detection');
       return false;
     }
     try {
@@ -217,7 +238,7 @@
       meterAnalyser.fftSize = 512;
       src.connect(meterAnalyser);
       meterData = new Uint8Array(meterAnalyser.fftSize);
-      label.textContent = '正在检测';
+      label.textContent = vt('video.detecting');
       meterLoop();
       return true;
     } catch (e) {
@@ -237,14 +258,14 @@
           meterAnalyser.fftSize = 512;
           src2.connect(meterAnalyser);
           meterData = new Uint8Array(meterAnalyser.fftSize);
-          label.textContent = '正在检测';
+          label.textContent = vt('video.detecting');
           meterLoop();
           return true;
         } catch (e2) {
           lastMicError = e2.name || lastMicError;
         }
       }
-      label.textContent = lastMicError === 'NotAllowedError' ? '未授权' : '打不开';
+      label.textContent = lastMicError === 'NotAllowedError' ? vt('video.not_allowed') : vt('video.cannot_open');
       bar.style.width = '0%';
       return false;
     }
@@ -268,7 +289,7 @@
     if (bar) bar.style.width = '0%';
     if (bar) bar.classList.remove('hot');
     if (label) {
-      label.textContent = '已关闭';
+      label.textContent = vt('video.closed');
       label.classList.remove('live', 'hot');
     }
   }
@@ -291,7 +312,7 @@
     bar.classList.toggle('hot', meterLevel > 0.72);
     label.classList.toggle('live', meterLevel > 0.05);
     label.classList.toggle('hot', meterLevel > 0.72);
-    label.textContent = meterLevel > 0.72 ? '有点大声' : (meterLevel > 0.05 ? '有声音' : '很安静');
+    label.textContent = meterLevel > 0.72 ? vt('video.loud') : (meterLevel > 0.05 ? vt('video.audible') : vt('video.quiet'));
     requestAnimationFrame(meterLoop);
   }
 
@@ -321,33 +342,33 @@
     ws = new WebSocket(`${proto}://${location.host}/ws?sid=${encodeURIComponent(callSid)}` + (IS_PANEL ? '&panel=1' : ''));
     ws.onopen = () => {
       wsRetry = 0;
-      setStatus('在线 · 可以说话了', '#67e8f9');
+      setStatus(vt('video.online'), '#67e8f9');
     };
     ws.onclose = () => {
       // 手机切后台、锁屏、信号抖动都会断；退避重连，别一直硬砸
       wsRetry += 1;
       const delay = Math.min(12000, 900 * Math.pow(1.8, Math.min(wsRetry - 1, 5)));
       setStatus(wsRetry <= 1
-        ? '连接断开，正在重连…'
-        : `连接断开，${Math.round(delay / 1000)} 秒后再试（第 ${wsRetry} 次）`, '#fb7185');
+        ? vt('video.reconnecting')
+        : vt('video.retry', {seconds: Math.round(delay / 1000), attempt: wsRetry}), '#fb7185');
       wsReconnectTimer = setTimeout(connectWS, delay);
     };
-    ws.onerror = () => setStatus('连接出错，正在重连…', '#fb7185');
+    ws.onerror = () => setStatus(vt('video.connection_error'), '#fb7185');
     ws.onmessage = ev => {
       let data;
       try { data = JSON.parse(ev.data); } catch { return; }
       if (data.type === 'ready') {
-        setStatus('在线 · 可以说话了', '#67e8f9');
+        setStatus(vt('video.online'), '#67e8f9');
       } else if (data.type === 'status') {
         thinking = data.status === 'thinking';
         speaking = data.status === 'speaking';
         if (thinking) {
           beginReplyAudio();
           resetStreamBubble();
-          setStatus('她在想…', '#a78bfa');
-        } else if (speaking) setStatus('她在说… · 点麦克风可以打断', '#67e8f9');
-        else if (data.status === 'listening') setStatus('她在听…', '#a78bfa');
-        else setStatus('在线 · 可以说话了', '#67e8f9');
+          setStatus(vt('video.thinking'), '#a78bfa');
+        } else if (speaking) setStatus(vt('video.speaking'), '#67e8f9');
+        else if (data.status === 'listening') setStatus(vt('video.listening'), '#a78bfa');
+        else setStatus(vt('video.online'), '#67e8f9');
       } else if (data.type === 'delta') {
         // 流式：字先出来，声音按句跟上，不用等整段合成完
         appendDelta(data.text || '');
@@ -366,7 +387,7 @@
         }
       } else if (data.type === 'blocked') {
       if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
-      showBlocked(data.reason || '陪玩中，视频通话已隔离');
+      showBlocked(data.reason || vt('video.blocked'));
     } else if (data.type === 'companion') {
         // 桌面小人自己会冒气泡；这里只在页面聊天气泡里留一份
         bubble(data.text || '', 'her');
@@ -374,13 +395,13 @@
       } else if (data.type === 'presence') {
         // 她注意到你在不在（2026-11-09）
         if (data.state === 'in') {
-          setStatus('她看见你回来了', '#67e8f9');
+          setStatus(vt('video.welcome_back'), '#67e8f9');
         } else if (data.state === 'out') {
-          setStatus('你走开了，她还在', '#94a3b8');
+          setStatus(vt('video.away'), '#94a3b8');
         }
       } else if (data.type === 'error') {
-        bubble('（没接上：' + (data.message || '未知错误') + '）', 'sys');
-        setStatus('出错了', '#fb7185');
+        bubble(vt('video.reply_error', {error: data.message || vt('video.unknown_error')}), 'sys');
+        setStatus(vt('video.error'), '#fb7185');
       }
     };
   }
@@ -408,7 +429,7 @@
   function paintPlayalong() {
     if (!playalongBtn) return;
     playalongBtn.classList.toggle('on', playalongOn);
-    if (playalongLabel) playalongLabel.textContent = playalongOn ? '陪玩中' : '陪玩';
+    if (playalongLabel) playalongLabel.textContent = playalongOn ? vt('video.play_active') : vt('video.play');
   }
   if (playalongBtn) {
     // 进页面先问服务器：可能上次小人崩了，开关其实已经关了
@@ -427,16 +448,16 @@
         });
         const j = await res.json();
         if (!j.ok) {
-          toast('陪玩没开起来：' + (j.overlay || j.error || '未知'));
+          toast(vt('video.play_open_error', {error: j.overlay || j.error || vt('video.unknown')}));
           playalongOn = false;
           paintPlayalong();
         } else if (playalongOn) {
-          setStatus('陪玩中 · 桌面上的她会看着屏幕', '#67e8f9');
+          setStatus(vt('video.play_status'), '#67e8f9');
         } else {
-          setStatus('陪玩已关', '#94a3b8');
+          setStatus(vt('video.play_off'), '#94a3b8');
         }
       } catch (e) {
-        toast('陪玩开关失败');
+        toast(vt('video.play_failed'));
         playalongOn = false;
         paintPlayalong();
       }
@@ -467,7 +488,7 @@
     // adaptive 模式下：你开口这一刻强制看一眼，画面比"上一次定时抓的"新鲜
     try { if (cameraMode === 'adaptive' && camStream) captureFrame(true); } catch (e) {}
     ws.send(JSON.stringify({ text }));
-    setStatus('她在想…', '#a78bfa');
+    setStatus(vt('video.thinking'), '#a78bfa');
     return true;
   }
 
@@ -689,7 +710,7 @@
             speaking = false;
             window.__companionSpeaking = false;
             targetLevel = 0;
-            setStatus('在线 · 可以说话了', '#67e8f9');
+            setStatus(vt('video.online'), '#67e8f9');
             done();
           };
           src.start();
@@ -734,7 +755,7 @@
         speaking = false;
         window.__companionSpeaking = false;
         targetLevel = 0;
-        setStatus('在线 · 可以说话了', '#67e8f9');
+        setStatus(vt('video.online'), '#67e8f9');
         done();
       };
       audio.src = 'data:audio/mp3;base64,' + b64;
@@ -758,10 +779,10 @@
         } catch (e) {}
         pendingAudio = b64;      // 记下来，下次有任何手势就补播
         if (errName === 'NotAllowedError' || errName === 'NotSupportedError') {
-          bubble('（浏览器拦住了声音，点一下屏幕或按个键就好）', 'sys');
+          bubble(vt('video.audio_blocked'), 'sys');
           try { document.getElementById('speaker')?.classList.add('need-tap'); } catch (e) {}
         } else if (errName !== 'AbortError') {
-          bubble('（这段声音没放出来：' + errName + '，点一下屏幕再试）', 'sys');
+          bubble(vt('video.audio_block_error', {error: errName}), 'sys');
         }
         done();
       };
@@ -812,7 +833,7 @@
         read();
       }).catch(failed);
     } catch (e) {
-      bubble('（音频播放失败：' + e.message + '）', 'sys');
+      bubble(vt('video.audio_error', {error: e.message}), 'sys');
       done();
     }
   }
@@ -908,7 +929,7 @@
   let userBusyAt = 0;
   setInterval(() => {
     if (!userBusy) { userBusyAt = 0; return; }
-    const busyDoing = micLabel.textContent === '点击结束' || micLabel.textContent === '处理中…';
+    const busyDoing = mic.classList.contains('listening') || mic.dataset.processing === '1';
     if (busyDoing) { userBusyAt = performance.now(); return; }
     if (!userBusyAt) { userBusyAt = performance.now(); return; }
     if (performance.now() - userBusyAt > 30000) {
@@ -924,7 +945,7 @@
     if (ok) {
       input.value = '';
     } else {
-      try { toast('还没连上，正在重连；这句先留着'); } catch (e) {}
+      try { toast(vt('video.not_connected')); } catch (e) {}
       try { connectWS(); } catch (e) {}
     }
   }
@@ -937,10 +958,10 @@
   testMicBtn.onclick = async () => {
     if (micStream) {
       stopMicMeter();
-      testMicBtn.textContent = '测麦克风';
+      testMicBtn.textContent = vt('video.test_mic');
     } else {
       const ok = await ensureMicMeter();
-      testMicBtn.textContent = ok ? '关闭测试' : '测麦克风';
+      testMicBtn.textContent = ok ? vt('video.stop_test') : vt('video.test_mic');
     }
   };
 
@@ -959,10 +980,10 @@
     picker.style.display = 'none';
     document.body.appendChild(picker);
 
-    micLabel.textContent = '点我说话';
-    hint.textContent = '手机上会弹出录音机：录完点“使用/完成”，她会听';
+    micLabel.textContent = vt('video.tap_speak');
+    hint.textContent = vt('video.mobile_hint');
     testMicBtn.style.display = 'none';
-    document.getElementById('meter-text').textContent = '手机录音';
+    document.getElementById('meter-text').textContent = vt('video.phone_recording');
 
     picker.onchange = async () => {
       const file = picker.files && picker.files[0];
@@ -973,15 +994,15 @@
         return;
       }
       if (file.size < 1000) {
-        hint.textContent = '录得太短了，再试一次';
+        hint.textContent = vt('video.too_short');
         resumeSuppressed();
         return;
       }
       suppressedReply = null;
       getAudioCtx();
-      bubble('语音消息', 'user');
-      setStatus('她在听…', '#a78bfa');
-      hint.textContent = '上传中…';
+      bubble(vt('video.voice_message'), 'user');
+      setStatus(vt('video.listening'), '#a78bfa');
+      hint.textContent = vt('video.uploading');
       try {
         const res = await fetch('/api/voice', {
           method: 'POST',
@@ -990,8 +1011,8 @@
         });
         const data = await res.json();
         if (!res.ok || data.error) {
-          hint.textContent = '没听清：' + (data.error || res.status);
-          setStatus('在线 · 可以说话了', '#67e8f9');
+          hint.textContent = vt('video.asr_error', {error: data.error || res.status});
+          setStatus(vt('video.online'), '#67e8f9');
           return;
         }
         if (data.transcript) bubble('“' + data.transcript + '”', 'user');
@@ -1003,11 +1024,11 @@
         } else {
           setTimeout(() => { try { window.__companionRefreshMood?.(); } catch (e) {} }, 300);
         }
-        setStatus('在线 · 可以说话了', '#67e8f9');
-        hint.textContent = '想说就再点一下';
+        setStatus(vt('video.online'), '#67e8f9');
+        hint.textContent = vt('video.speak_again');
       } catch (e) {
-        hint.textContent = '发送失败：' + (e.message || e);
-        setStatus('出错了', '#fb7185');
+        hint.textContent = vt('video.send_error', {error: e.message || e});
+        setStatus(vt('video.error'), '#fb7185');
       }
     };
 
@@ -1025,8 +1046,8 @@
       picker.click();
     };
   } else if (!canRecord) {
-    micLabel.textContent = '用文字';
-    hint.textContent = '这个浏览器不支持录音，用下面的输入框也可以';
+    micLabel.textContent = vt('video.use_text');
+    hint.textContent = vt('video.no_recording');
     mic.onclick = () => input.focus();
   } else {
     let recorder = null;
@@ -1035,10 +1056,11 @@
     let starting = false;   // 防连点：getUserMedia 是异步的，双击会开出两个录音器
 
     function resetMicUI() {
+      delete mic.dataset.processing;
       listening = false;
       mic.classList.remove('listening');
-      micLabel.textContent = '点击说话';
-      if (!speaking && !thinking) setStatus('在线 · 可以说话了', '#67e8f9');
+      micLabel.textContent = vt('video.speak');
+      if (!speaking && !thinking) setStatus(vt('video.online'), '#67e8f9');
     }
 
     function pickMime() {
@@ -1067,8 +1089,8 @@
         userBusy = false;
         resumeSuppressed();
         hint.textContent = lastMicError === 'NotAllowedError'
-          ? '麦克风被拒绝了：点地址栏左边的小锁 → 麦克风 → 允许，再点一次'
-          : '麦克风打不开（可能被别的 App 占着），或者直接打字';
+          ? vt('video.mic_denied')
+          : vt('video.mic_busy');
         return;
       }
       const mime = pickMime();
@@ -1080,7 +1102,7 @@
         starting = false;
         userBusy = false;
         resumeSuppressed();
-        hint.textContent = '录音启动失败：' + (e.message || e.name);
+        hint.textContent = vt('video.record_error', {error: e.message || e.name});
         stopMicMeter();
         return;
       }
@@ -1095,37 +1117,38 @@
         userBusy = false;
         resetMicUI();
         stopMicMeter();
-        testMicBtn.textContent = '测麦克风';
+        testMicBtn.textContent = vt('video.test_mic');
         if (!blob.size) {
-          hint.textContent = '没录到声音，再试一次';
+          hint.textContent = vt('video.no_audio');
           resumeSuppressed();
           return;
         }
         if (!ws || ws.readyState !== WebSocket.OPEN) {
           // 别让人以为发出去了：说清楚没发，并立刻催一次重连（原来只写了"刷新页面"）
-          hint.textContent = '连接断了，正在重连——刚才那段没发出去，再说一次';
-          setStatus('连接断开，正在重连…', '#fb7185');
+          hint.textContent = vt('video.not_sent');
+          setStatus(vt('video.reconnecting'), '#fb7185');
           try { connectWS(); } catch (e) {}
           return;
         }
         suppressedReply = null;
-        bubble('语音消息', 'user');
-        setStatus('她在听…', '#a78bfa');
+        bubble(vt('video.voice_message'), 'user');
+        setStatus(vt('video.listening'), '#a78bfa');
         ws.send(await blob.arrayBuffer());
       };
       recorder.start(200);
       starting = false;
       recording = true;
       mic.classList.add('listening');
-      micLabel.textContent = '点击结束';
-      setStatus('在听你说话…再点一下结束', '#f472b6');
+      micLabel.textContent = vt('video.finish');
+      setStatus(vt('video.recording_status'), '#f472b6');
     }
 
     mic.onclick = async () => {
       getAudioCtx();
       if (recording) {
         recording = false;
-        micLabel.textContent = '处理中…';
+        mic.dataset.processing = '1';
+        micLabel.textContent = vt('video.processing');
         try { recorder.stop(); } catch { resetMicUI(); stopMicMeter(); }
         // 关键：先把麦克风轨道真正停掉，再在“这次点击”的手势里把
         // Safari 的音频会话从 play-and-record 切回 playback。
@@ -1178,7 +1201,7 @@
       ctx.fillStyle = waited > 8 ? 'rgba(251,113,133,.75)' : 'rgba(120,220,255,.5)';
       ctx.font = '14px "Microsoft YaHei"';
       ctx.textAlign = 'center';
-      ctx.fillText(waited > 8 ? '形象没加载出来，刷新一下试试' : 'TA正在加载…', cx, cy);
+      ctx.fillText(waited > 8 ? vt('video.model_failed') : vt('video.model_loading'), cx, cy);
     }
 
     requestAnimationFrame(draw);
@@ -1212,9 +1235,10 @@
     // 第一次用必须先在手机装一次根证书，直接跳 https 会被“非私人连接”吓退；
     // location.search 带着口令（?t=），切过去不会被拦 403
     bar.innerHTML =
-      '<b>手机开麦要用 HTTPS</b>：第一次先 '
-      + '<span class="xy-cert" style="text-decoration:underline">装证书</span>，'
-      + '再 <span style="text-decoration:underline">点这里切过去 →</span>';
+      '<b data-i18n="video.https_mic"></b> <span data-i18n="video.first_step"></span> '
+      + '<span class="xy-cert" style="text-decoration:underline" data-i18n="video.install_cert"></span> '
+      + '<span style="text-decoration:underline" data-i18n="video.switch_https"></span>';
+    window.LysmorI18n.applyText(bar);
     bar.querySelector('.xy-cert').onclick = e => {
       e.stopPropagation();
       location.href = '/static/cert-help.html' + location.search;
@@ -1240,7 +1264,8 @@
   // 镜头：user=前置（拍自己，镜像），environment=后置（拍眼前，不镜像）
   // 选了会记住，下次开摄像头还是这个镜头。
   const LENS_KEY = 'companion_cam_lens';
-  const LENS_NAME = { user: '前置', environment: '后置' };
+  const LENS_NAME = { user: 'video.front', environment: 'video.rear' };
+  const lensName = () => vt(LENS_NAME[camFacing]);
   const lensBox = document.getElementById('lens');
   let camFacing = 'user';
   try {
@@ -1269,9 +1294,7 @@
   function visionHint(prefix) {
     const secs = Math.max(2, Math.round(
       (cameraMode === 'adaptive' ? cameraIntervalMs : visionIntervalMs) / 1000));
-    return prefix + (cameraMode === 'adaptive'
-      ? '，有变化就' + secs + ' 秒内看一眼'
-      : '，每 ' + secs + ' 秒看一眼');
+    return vt(cameraMode === 'adaptive' ? 'video.vision_adaptive' : 'video.vision_fixed', {prefix, seconds: secs});
   }
 
   // 变化门：缩到 64×36 做灰度差，比一次上传便宜几个数量级
@@ -1388,7 +1411,7 @@
     try { window.resetGaze?.(); } catch (e) {}
     if (camWrap) camWrap.classList.remove('show');
     if (camBtn) camBtn.classList.remove('on');
-    if (camLabel) camLabel.textContent = '让她看见我';
+    if (camLabel) camLabel.textContent = vt('video.see_me');
     if (seenEl) seenEl.textContent = '';
     camStarting = false;
     paintLens();          // 摄像头关了，前置/后置这一排跟着收起来
@@ -1396,8 +1419,8 @@
     // 否则状态栏会一直卡在"正在切到…"上。
     if (!wasOn && !force) return;   // 本来就没开，不要弹提示
     stopPresenceLoop();
-    setCamState('摄像头已关闭', '');
-    try { toast('摄像头已关闭，她看不见你了'); } catch (e) {}
+    setCamState(vt('video.camera_off'), '');
+    try { toast(vt('video.camera_gone')); } catch (e) {}
   }
 
   // 在场心跳（2026-11-09）：每 3 秒发一张 320 宽的小图，
@@ -1413,12 +1436,12 @@
       if (next === 'pico') {
         if (camStream) stopCam(true);
         if (camBtn) camBtn.disabled = true;
-        setCamState('已带TA出门 · 电脑摄像头关闭', '');
-        if (hint) hint.textContent = '现在她的眼睛是 PICO 眼镜，电脑摄像头不参与';
+        setCamState(vt('video.outside'), '');
+        if (hint) hint.textContent = vt('video.pico_hint');
       } else {
         if (camBtn) camBtn.disabled = false;
-        setCamState('在家 · 电脑摄像头可用', '');
-        if (hint) hint.textContent = '电脑摄像头可用，点“让她看见我”开始';
+        setCamState(vt('video.at_home'), '');
+        if (hint) hint.textContent = vt('video.camera_available');
       }
     } catch (e) {}
   }
@@ -1502,9 +1525,10 @@ function stopPresenceLoop() {
       }
       const data = await res.json();
       if (data.caption) {
-        seenEl.innerHTML = '她看到：<b>' + escapeHtml(data.caption) + '</b>';
+        seenEl.replaceChildren(document.createTextNode(vt('video.she_sees')));
+        const caption = document.createElement('b'); caption.textContent = data.caption; seenEl.appendChild(caption);
       } else if (data.error) {
-        seenEl.textContent = '（没看清：' + data.error + '）';
+        seenEl.textContent = vt('video.vision_error', {error:data.error});
       }
     } catch (e) {
       /* 看不了就安静，不打断通话 */
@@ -1578,12 +1602,12 @@ function stopPresenceLoop() {
       const ok = await window.__companionFaceGaze?.start(selfView, (st) => {
         if (window.__paReport) window.__paReport('gaze-state', st);
         if (!camStream) return;
-        if (st === 'loading') setCamState('摄像头已打开 · 正在准备看她…（首次约 3MB）', 'busy');
-        else if (st === 'ready') setCamState('摄像头已打开 · 在找你的脸…', 'busy');
-        else if (st === 'locked') setCamState('摄像头已打开 · 她在看着你', 'on');
-        else if (st === 'searching') setCamState('摄像头已打开 · 她在找你…', 'busy');
+        if (st === 'loading') setCamState(vt('video.gaze_loading'), 'busy');
+        else if (st === 'ready') setCamState(vt('video.gaze_ready'), 'busy');
+        else if (st === 'locked') setCamState(vt('video.gaze_locked'), 'on');
+        else if (st === 'searching') setCamState(vt('video.gaze_searching'), 'busy');
         else if (st === 'failed') {
-          setCamState('摄像头已打开 · 这次只跟鼠标', '');
+          setCamState(vt('video.mouse_only'), '');
           if (window.__paReport) {
             window.__paReport('gaze-failed', window.__companionFaceGazeError || 'unknown');
           }
@@ -1593,12 +1617,12 @@ function stopPresenceLoop() {
       watchGazeForDiag();
       if (ok === false) {
         try { window.setGazeMode?.('mouse'); } catch (e) {}
-        setCamState('摄像头已打开 · 这次只跟鼠标', '');
+        setCamState(vt('video.mouse_only'), '');
       }
     } catch (e) {
       if (!camStream) return;
       try { window.setGazeMode?.('mouse'); } catch (err) {}
-      setCamState('摄像头已打开 · 这次只跟鼠标', '');
+      setCamState(vt('video.mouse_only'), '');
     }
   }
 
@@ -1609,7 +1633,7 @@ function stopPresenceLoop() {
     camFacing = target;
     try { localStorage.setItem(LENS_KEY, camFacing); } catch (e) {}
     paintLens();
-    setCamState('正在切到' + LENS_NAME[camFacing] + '镜头…', 'busy');
+    setCamState(vt('video.switching', {lens: lensName()}), 'busy');
     // 先把视线交还鼠标：切镜头时旧画面立刻作废
     try { window.__companionFaceGaze?.stop(); } catch (e) {}
     try { window.setGazeMode?.('mouse'); } catch (e) {}
@@ -1625,7 +1649,7 @@ function stopPresenceLoop() {
       if (got.fellBack) {
         // 设备没有后置镜头：把这路流交给调用方之前先扔掉，别让界面撒谎
         try { got.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
-        const err = new Error('这台设备没有后置镜头');
+        const err = new Error(vt('video.no_rear'));
         err.name = 'NoRearCamera';
         throw err;
       }
@@ -1633,21 +1657,21 @@ function stopPresenceLoop() {
       camStream = stream;
       camStarting = false;
       stream.getVideoTracks().forEach(track => {
-        track.onended = () => { stopCam(); try { toast('摄像头被系统关掉了'); } catch (e) {} };
+        track.onended = () => { stopCam(); try { toast(vt('video.camera_system_off')); } catch (e) {} };
       });
       selfView.srcObject = stream;
       try { await selfView.play(); } catch (e) {}
       try { restorePlaybackRoute(); } catch (e) {}
       camWrap.classList.add('show');
       camBtn.classList.add('on');
-      camLabel.textContent = '关掉摄像头';
-      setCamState('摄像头已打开 · ' + LENS_NAME[camFacing] + '镜头', 'on');
+      camLabel.textContent = vt('video.close_camera');
+      setCamState(vt('video.lens_open', {lens: lensName()}), 'on');
       hint.textContent = camFacing === 'environment'
-        ? visionHint('后置镜头对着你眼前')
-        : visionHint('前置镜头对着你');
+        ? visionHint(vt('video.rear_prefix'))
+        : visionHint(vt('video.front_prefix'));
       await startGaze();
       paintLens();
-      try { toast('已切到' + LENS_NAME[camFacing] + '镜头'); } catch (e) {}
+      try { toast(vt('video.switched', {lens: lensName()})); } catch (e) {}
     } catch (e) {
       // 切不过去就退回原来那个镜头，别把摄像头留成黑屏
       camStarting = false;
@@ -1660,53 +1684,53 @@ function stopPresenceLoop() {
         selfView.srcObject = back;
         try { await selfView.play(); } catch (err) {}
         setCamState(noRear
-          ? '这台设备没有后置镜头，还是' + LENS_NAME[camFacing]
-          : '切镜头失败，已回到' + LENS_NAME[camFacing], 'on');
+          ? vt('video.no_rear_stay', {lens: lensName()})
+          : vt('video.switch_return', {lens: lensName()}), 'on');
         await startGaze();
       } catch (e2) {
         camStream = null;
         stopCam(true);      // 强制收尾，别让状态栏卡在"正在切到…"
       }
       hint.textContent = noRear
-        ? '没找到后置镜头，先留在' + LENS_NAME[camFacing]
-        : '这个镜头打不开（' + (e.name || '未知') + '），先留在' + LENS_NAME[camFacing];
+        ? vt('video.no_rear_found', {lens: lensName()})
+        : vt('video.lens_error', {error: e.name || vt('video.unknown'), lens: lensName()});
       paintLens();
     }
   }
 
   async function startCam() {
     if (globalCameraSource === 'pico') {
-      try { setCamState("已带TA出门 · 电脑摄像头已关闭", ""); } catch (e) {}
-      try { hint.textContent = "现在她的眼睛是 PICO 眼镜，电脑摄像头不参与"; } catch (e) {}
+      try { setCamState(vt('video.pico_closed'), ""); } catch (e) {}
+      try { hint.textContent = vt('video.pico_hint'); } catch (e) {}
       return;
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      hint.textContent = '手机要开摄像头得用 https 地址（8004 那个）';
+      hint.textContent = vt('video.https_camera');
       return;
     }
     if (camStarting) return;
     camStarting = true;
-    setCamState('正在打开' + LENS_NAME[camFacing] + '摄像头…', 'busy');
+    setCamState(vt('video.opening_lens', {lens: lensName()}), 'busy');
     try {
       const got = await openStream(camFacing);
       camStream = got.stream;
       if (got.fellBack && camFacing === 'environment') {
-        // 记着"后置"但设备没有后置：安静回到前置，界面不能说成后置
+        // 记着后置但设备没有后置：安静回到前置，界面不能说成后置
         camFacing = 'user';
         try { localStorage.setItem(LENS_KEY, camFacing); } catch (err) {}
       }
     } catch (e) {
       camStarting = false;
-      setCamState('打不开（' + (e.name || '权限被拒') + '）', '');
-      hint.textContent = '摄像头打不开：' + (e.name || e.message);
-      try { toast('摄像头打不开：' + (e.name || '权限被拒')); } catch (err) {}
+      setCamState(vt('video.open_error', {error: e.name || vt('video.permission_denied')}), '');
+      hint.textContent = vt('video.camera_error', {error: e.name || e.message});
+      try { toast(vt('video.camera_error', {error: e.name || vt('video.permission_denied')})); } catch (err) {}
       return;
     }
     camStarting = false;
     // 设备被拔掉 / 权限被系统收回时，自动收尾并提示
     try {
       camStream.getVideoTracks().forEach(track => {
-        track.onended = () => { stopCam(); try { toast('摄像头被系统关掉了'); } catch (e) {} };
+        track.onended = () => { stopCam(); try { toast(vt('video.camera_system_off')); } catch (e) {} };
       });
     } catch (e) {}
     selfView.srcObject = camStream;
@@ -1716,16 +1740,16 @@ function stopPresenceLoop() {
     try { restorePlaybackRoute(); } catch (e) {}
     camWrap.classList.add('show');
     camBtn.classList.add('on');
-    camLabel.textContent = '关掉摄像头';
+    camLabel.textContent = vt('video.close_camera');
     paintLens();
-    setCamState('摄像头已打开 · ' + LENS_NAME[camFacing] + '镜头', 'on');
+    setCamState(vt('video.lens_open', {lens: lensName()}), 'on');
     hint.textContent = camFacing === 'environment'
-      ? visionHint('后置镜头对着你眼前')
-      : visionHint('她可以看见你了');
+      ? visionHint(vt('video.rear_prefix'))
+      : visionHint(vt('video.can_see'));
     try {
       toast(camFacing === 'environment'
-        ? '后置镜头已打开，她能看见你眼前的'
-        : '摄像头已打开，她能看见你了');
+        ? vt('video.rear_on')
+        : vt('video.camera_on'));
     } catch (e) {}
     // fixed：每 N 秒看一次；adaptive：间隔放长，主要靠"变化了"和"开口时"触发
     camTimer = setInterval(captureFrame,
@@ -1773,9 +1797,9 @@ function stopPresenceLoop() {
       restorePlaybackRoute();
       if (lastReplyAudio) {
         playAudio(lastReplyAudio);
-        hint.textContent = '已切到外放，重播最近一句';
+        hint.textContent = vt('video.speaker_replay');
       } else {
-        hint.textContent = '外放已就绪，下次回复会从扬声器播';
+        hint.textContent = vt('video.speaker_ready');
       }
     };
   }
@@ -1805,12 +1829,12 @@ function stopPresenceLoop() {
   const isElectronApp = /electron/i.test(navigator.userAgent || '');
   const md = navigator.mediaDevices;
   const canAsk = !!(md && md.getUserMedia);
-  const CN = {granted:'已允许', denied:'被拒绝', prompt:'还没问过', unknown:'未知', unsupported:'不支持'};
+  const CN = {granted:'video.granted', denied:'video.denied', prompt:'video.unasked', unknown:'video.unknown', unsupported:'video.unsupported'};
 
   if (isElectronApp){
-    // 在「TA」App（Electron）里：摄像头/麦克风由 App 自动放行，不再显示"未授权"误导
+    // 在「TA」App（Electron）里：摄像头/麦克风由 App 自动放行，不显示未授权提示
     setDot('#22c55e');
-    txt.textContent = '已由「TA」App 授权：摄像头 / 麦克风直接可用 ✓';
+    txt.textContent = vt('video.electron_permission');
     allowBtn.hidden = true;
     openBtn.hidden = true;
     bar.hidden = false;
@@ -1834,7 +1858,7 @@ function stopPresenceLoop() {
 
   async function refresh(){
     if (!canAsk){
-      txt.textContent = '这个页面不能调用摄像头/麦克风：需要 https 或 localhost（当前地址不满足）';
+      txt.textContent = vt('video.insecure');
       allowBtn.hidden = true; bar.hidden = false; setDot('#ef4444');
       tellParent({ type: 'companion-perm', ok: false, reason: 'insecure-context' });
       return;
@@ -1846,7 +1870,7 @@ function stopPresenceLoop() {
     tellParent({ type: 'companion-perm', ok: granted, camera: cam, microphone: mic });
     if (granted){
       setDot('#22c55e');
-      txt.textContent = '摄像头 / 麦克风：已授权 ✓';
+      txt.textContent = vt('video.permission_ready');
       allowBtn.hidden = true;
       clearTimeout(refresh._t);
       refresh._t = setTimeout(function(){ bar.hidden = true; }, 1600);
@@ -1855,10 +1879,9 @@ function stopPresenceLoop() {
     allowBtn.hidden = false;
     setDot(denied ? '#ef4444' : '#f59e0b');
     if (denied){
-      txt.textContent = '摄像头或麦克风被浏览器拒绝了（' + CN[cam] + ' / ' + CN[mic] + '）。'
-        + '点「在浏览器里打开」重新允许一次，之后这个应用就能直接用。';
+      txt.textContent = vt('video.permission_denied_help', {camera:vt(CN[cam]),microphone:vt(CN[mic])});
     } else {
-      txt.textContent = '还没授权点我：摄像头 ' + CN[cam] + ' · 麦克风 ' + CN[mic];
+      txt.textContent = vt('video.permission_state', {camera: vt(CN[cam]), microphone: vt(CN[mic])});
     }
     bar.hidden = false;
   }
@@ -1866,16 +1889,15 @@ function stopPresenceLoop() {
   allowBtn.addEventListener('click', async function(){
     try {
       allowBtn.disabled = true;
-      txt.textContent = '正在弹授权窗口…请在提示里点「允许」';
+      txt.textContent = vt('video.permission_prompt');
       const stream = await md.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach(function(t){ t.stop(); });
-      txt.textContent = '授权成功，正在检查…';
+      txt.textContent = vt('video.permission_success');
       await refresh();
     } catch (err){
       const name = (err && err.name) || String(err);
       setDot('#ef4444');
-      txt.textContent = '授权失败：' + name
-        + '（可能是浏览器静默拦截了嵌入页的授权请求，点右边「在浏览器里打开」再允许一次）';
+      txt.textContent = vt('video.permission_error', {error:name});
     } finally {
       allowBtn.disabled = false;
     }
@@ -1901,10 +1923,18 @@ function showBlocked(reason) {
     + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;'
     + 'color:#dbeafe;font:15px "Microsoft YaHei",system-ui,sans-serif;text-align:center;padding:24px';
   d.innerHTML = '<div style="font-size:19px;font-weight:600">' + reason + '</div>'
-    + '<div style="opacity:.75">陪玩和视频通话是隔离的，同一时间只能开一个。</div>'
+    + '<div style="opacity:.75" data-i18n="video.blocked_help"></div>'
     + '<div style="display:flex;gap:14px;margin-top:6px">'
-    + '<a href="/playalong' + location.search + '" style="color:#67e8f9;text-decoration:none">去陪玩页</a>'
-    + '<a href="javascript:location.reload()" style="color:#67e8f9;text-decoration:none">重试</a>'
+    + '<a href="/playalong' + location.search + '" style="color:#67e8f9;text-decoration:none" data-i18n="video.go_play"></a>'
+    + '<a href="javascript:location.reload()" style="color:#67e8f9;text-decoration:none" data-i18n="video.retry_action"></a>'
     + '</div>';
+  window.LysmorI18n.applyText(d);
   document.body.appendChild(d);
 }
+
+window.addEventListener('lysmor:languagechange', () => {
+  for (const id of videoLiveIds) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = refreshVideoText(node.textContent);
+  }
+});

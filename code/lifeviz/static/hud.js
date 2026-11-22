@@ -1,5 +1,6 @@
 /* 顶部状态条 + 左下遥测块：纯读 window.__endoState，不额外请求。 */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const t0 = performance.now();
   const $ = id => document.getElementById(id);
 
@@ -13,7 +14,7 @@
     if (el) {
       const lvl = s.emotion_level || '—';
       const nap = s.asleep && s.sleep_kind === 'nap';
-      el.textContent = s.asleep ? (nap ? '午睡中 · ' + lvl : '睡梦中 · ' + lvl) : '情绪 ' + lvl;
+      el.textContent = s.asleep ? (nap ? tr("panels.nap_prefix") + lvl : tr("panels.sleeping_prefix") + lvl) : tr("panels.emotion_prefix") + lvl;
       el.classList.toggle('hot', /峰|恐惧|害怕|哭/.test(lvl));
     }
     const clock = $('hud-time');
@@ -41,20 +42,20 @@
     }
     const cyc = $('hud-cycle');
     if (cyc) {
-      const names = { menstrual: '经期', follicular: '卵泡期', ovulation: '排卵期', luteal: '黄体期', premenstrual: '经前' };
-      const ph = names[s.cycle_phase] || '周期';
-      cyc.textContent = s.cycle_day ? `${ph} D${s.cycle_day}` : '周期 —';
+      const names = { menstrual: tr("panels.menstrual"), follicular: tr("panels.follicular"), ovulation: tr("panels.ovulation"), luteal: tr("panels.luteal"), premenstrual: tr("panels.premenstrual_short") };
+      const ph = names[s.cycle_phase] || tr("panels.cycle");
+      cyc.textContent = s.cycle_day ? `${ph} D${s.cycle_day}` : tr("panels.cycle_unknown");
       cyc.classList.toggle('hot', s.cycle_phase === 'menstrual' || s.cycle_phase === 'premenstrual');
     }
     const tag = $('cycle-tag');
     if (tag) {
-      const names = { menstrual: '经期', follicular: '卵泡期', ovulation: '排卵期', luteal: '黄体期', premenstrual: '经前期' };
+      const names = { menstrual: tr("panels.menstrual"), follicular: tr("panels.follicular"), ovulation: tr("panels.ovulation"), luteal: tr("panels.luteal"), premenstrual: tr("panels.premenstrual") };
       tag.textContent = s.cycle_day ? `${names[s.cycle_phase] || ''} D${s.cycle_day}` : '—';
     }
     const rate = $('hud-rate');
     if (rate) {
       const e = Number(s.energy);
-      rate.textContent = Number.isFinite(e) ? `刷新 ${(3 + (1 - e) * 2).toFixed(1)}s` : '刷新 —';
+      rate.textContent = Number.isFinite(e) ? tr("panels.refresh_seconds", {seconds: (3 + (1 - e) * 2).toFixed(1)}) : tr("panels.refresh_unknown");
     }
     setTimeout(tick, 900);
   }

@@ -3,30 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>控制台</title>
+<title data-i18n="services.console.title">控制台</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <select data-language-select style="position:fixed;right:12px;bottom:12px;z-index:1000;background:#101a2b;color:#d8e4f4;border:1px solid #486078;border-radius:5px;padding:4px"></select>
   <header>
-    <h1>控制台</h1>
+    <h1 data-i18n="services.console.title">控制台</h1>
     <span id="clock"></span>
   </header>
 
   <main>
     <section>
-      <h2>服务</h2>
+      <h2 data-i18n="services.console.services">服务</h2>
       <div id="services"></div>
     </section>
 
     <section id="right">
-      <h2>状态摘要</h2>
+      <h2 data-i18n="services.console.summary">状态摘要</h2>
       <div id="summary"></div>
 
-      <h2>最近动态</h2>
+      <h2 data-i18n="services.console.activities">最近动态</h2>
       <ul id="activities"></ul>
     </section>
   </main>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

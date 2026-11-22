@@ -5,11 +5,23 @@ r"""TA的"记忆脑"外挂：链接、PPR 扩展、自我表、睡眠总结。
 """
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import sqlite3
 import time
 from collections import defaultdict
+from threading import Lock
+
+from pathlib import Path
+import sys
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
 
 DB = (r"C:\你的用户\.astrbot_launcher\instances\<BOT_INSTANCE>"
       r"\core\data\plugin_data\astrbot_plugin_livingmemory\livingmemory.db")
@@ -70,7 +82,7 @@ def _refresh_cache():
         changed = True
     if changed:
         np.savez_compressed(VEC_CACHE, ids=np.array(ids), vecs=np.stack(mat))
-        print("cache refreshed:", len(ids))
+        print(t("memory.cache_refreshed", count=len(ids)))
 
 
 def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
@@ -78,7 +90,7 @@ def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
     import numpy as np
 
     if not os.path.exists(VEC_CACHE):
-        print("没有向量缓存，先跑 tools\\eval_memory.py")
+        print(t("memory.cache_missing"))
         return 0
     z = np.load(VEC_CACHE, allow_pickle=True)
     ids, mat = z["ids"], z["vecs"]
@@ -100,60 +112,82 @@ def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
             n += 1
     con.commit()
     con.close()
-    print("links:", n)
+    print(t("memory.links", count=n))
     return n
 
 
-_LINKS_CACHE = {"mtime": 0.0, "data": {}}
+class _RecallCache:
+    def __init__(self):
+        self.lock = Lock()
+        self.connection = self.identity = self.version = self.data = None
+        atexit.register(self.close)
+
+    def _reset(self):
+        if self.connection is not None:
+            self.connection.close()
+        self.connection = self.identity = self.version = self.data = None
+
+    def close(self):
+        with self.lock:
+            self._reset()
+
+    def read(self, path, loader):
+        with self.lock:
+            try:
+                info = os.stat(path)
+            except FileNotFoundError:
+                self._reset()
+                return {}
+            identity = (os.path.abspath(path), info.st_dev, info.st_ino)
+            if self.identity != identity:
+                self._reset()
+                uri = Path(path).resolve().as_uri() + '?mode=ro'
+                self.connection = sqlite3.connect(uri, uri=True, check_same_thread=False)
+                self.identity = identity
+            connection = self.connection
+            with connection:
+                connection.execute('BEGIN')
+                version = connection.execute('PRAGMA data_version').fetchone()[0]
+                if self.version == version:
+                    return self.data
+                data = loader(connection)
+            self.version, self.data = version, data
+            return data
+
+
+_LINKS_CACHE = _RecallCache()
+_GRAPH_CACHE = _RecallCache()
 
 
 def load_links() -> dict:
-    """链接表按 mtime 缓存，避免每次召回都开库。"""
-    if not os.path.exists(LINKS_DB):
-        return {}
-    try:
-        mt = os.path.getmtime(LINKS_DB)
-    except OSError:
-        return {}
-    if _LINKS_CACHE["mtime"] == mt and _LINKS_CACHE["data"]:
-        return _LINKS_CACHE["data"]
-    con = sqlite3.connect("file:%s?mode=ro" % LINKS_DB, uri=True)
+    return _LINKS_CACHE.read(LINKS_DB, _read_links)
+
+
+def _read_links(con) -> dict:
     out = defaultdict(list)
     for a, b, sim in con.execute("select a,b,sim from links"):
         out[int(a)].append((int(b), float(sim)))
-    con.close()
-    _LINKS_CACHE["mtime"] = mt
-    _LINKS_CACHE["data"] = out
     return out
 
 
 # ---------------------------------------------------------------- PPR
-_GRAPH_CACHE = {"mtime": 0.0, "adj": {}}
-
-
 def _load_mem_graph() -> dict:
-    """记忆-记忆邻接表，按记忆库 mtime 缓存。"""
     try:
-        mt = os.path.getmtime(DB)
-    except OSError:
+        return _GRAPH_CACHE.read(DB, _read_mem_graph)
+    except (OSError, sqlite3.Error):
         return {}
-    if _GRAPH_CACHE["mtime"] == mt and _GRAPH_CACHE["adj"]:
-        return _GRAPH_CACHE["adj"]
-    con = _ro()
-    try:
-        edges = con.execute(
-            "select source_memory_id, target_memory_id from graph_edges where status='active'"
-        ).fetchall()
-        node_map = defaultdict(list)
-        for m, src in con.execute(
-            "select e.source_memory_id, n.node_id from graph_entry_nodes n "
-            "join graph_entries e on e.id = n.entry_id"
-        ):
-            node_map[int(m)].append(int(src))
-    except Exception:
-        con.close()
-        return {}
-    con.close()
+
+
+def _read_mem_graph(con) -> dict:
+    edges = con.execute(
+        "select source_memory_id, target_memory_id from graph_edges where status='active'"
+    ).fetchall()
+    node_map = defaultdict(list)
+    for m, src in con.execute(
+        "select e.source_memory_id, n.node_id from graph_entry_nodes n "
+        "join graph_entries e on e.id = n.entry_id"
+    ):
+        node_map[int(m)].append(int(src))
 
     adj = defaultdict(set)
     for a, b in edges:
@@ -168,8 +202,6 @@ def _load_mem_graph() -> dict:
             for other in by_node[n]:
                 if other != m:
                     adj[m].add(other)
-    _GRAPH_CACHE["mtime"] = mt
-    _GRAPH_CACHE["adj"] = adj
     return adj
 
 
@@ -179,32 +211,6 @@ def ppr_expand(seed_ids, limit: int = 8, alpha: float = 0.55, iters: int = 12) -
     if not seeds:
         return []
     mem_edges = _load_mem_graph()
-    if not mem_edges:
-        return []
-    try:
-        edges = con.execute(
-            "select source_memory_id, target_memory_id from graph_edges where status='active'"
-        ).fetchall()
-        node_map = defaultdict(list)
-        for m, src in con.execute(
-            "select e.source_memory_id, n.node_id from graph_entry_nodes n "
-            "join graph_entries e on e.id = n.entry_id"
-        ):
-            node_map[int(m)].append(int(src))
-    except Exception:
-        con.close()
-        return []
-    con.close()
-
-    mem_edges = defaultdict(set)
-    for a, b in edges:
-        mem_edges[int(a)].add(int(b))
-        mem_edges[int(b)].add(int(a))
-    for m, nodes in node_map.items():
-        for other, onodes in node_map.items():
-            if other != m and set(nodes) & set(onodes):
-                mem_edges[m].add(other)
-
     if not mem_edges:
         return []
     # 在记忆-记忆图上做 PPR
@@ -224,7 +230,7 @@ def ppr_expand(seed_ids, limit: int = 8, alpha: float = 0.55, iters: int = 12) -
                 if x in new:
                     new[x] += share
         rank = new
-    out = [(m, s) for m, s in rank.items() if m not in seeds]
+    out = [(m, s) for m, s in rank.items() if m not in seeds and s > 0]
     out.sort(key=lambda x: -x[1])
     return [m for m, _ in out[:limit]]
 
@@ -364,7 +370,7 @@ def build_self() -> dict:
     }
     with open(SELF_JSON, "w", encoding="utf-8") as f:
         json.dump(self_data, f, ensure_ascii=False, indent=2)
-    print("self:", summary)
+    print(t("memory.self_label", summary=summary))
     return self_data
 
 

@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>画廊</title>
+<title data-i18n="services.gallery.title">画廊</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <select data-language-select style="position:fixed;right:12px;bottom:12px;z-index:1000;background:#101a2b;color:#d8e4f4;border:1px solid #486078;border-radius:5px;padding:4px"></select>
   <header>
-    <h1>画廊</h1>
+    <h1 data-i18n="services.gallery.title">画廊</h1>
     <span id="count"></span>
   </header>
 
@@ -22,10 +23,11 @@
         <p id="detail-note"></p>
         <p id="detail-date"></p>
       </div>
-      <button id="detail-close">关闭</button>
+      <button id="detail-close" data-i18n="services.close">关闭</button>
     </div>
   </div>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

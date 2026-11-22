@@ -3,6 +3,7 @@
  * 左：胃 → 小肠 → 结肠 → 厕所 ｜ 中：喝水 → 血容量 → 膀胱 ｜ 右：激素 + 代谢率
  */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('digest-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -264,19 +265,19 @@
     const midX = W * 0.455;
     const rightX = W * 0.67;
 
-    label('消化道', 2, 12, 'rgba(160,200,235,.55)', 10);
-    label('水 · 尿', midX + 2, 12, 'rgba(160,200,235,.55)', 10);
-    label('胃肠激素 · 代谢', rightX, 12, 'rgba(160,200,235,.55)', 10);
+    label(tr("panels.digestive_tract"), 2, 12, 'rgba(160,200,235,.55)', 10);
+    label(tr("panels.water_urine"), midX + 2, 12, 'rgba(160,200,235,.55)', 10);
+    label(tr("panels.gut_hormones"), rightX, 12, 'rgba(160,200,235,.55)', 10);
 
     // 消化道
     drawStomach(12, 34, 50, 70, stomach);
-    label('胃', 37, 120, C.dim, 10, 'center');
+    label(tr("panels.stomach"), 37, 120, C.dim, 10, 'center');
     value(pct(stomach) + '%', 37, 135, '#ffe1a8', 11, 'center');
 
     drawArrow(66, 69);
     const inX1 = leftEnd - 105;
     drawIntestine(88, inX1, 69, gut);
-    label('小肠', (88 + inX1) / 2, 120, C.dim, 10, 'center');
+    label(tr("panels.small_intestine"), (88 + inX1) / 2, 120, C.dim, 10, 'center');
     value(pct(gut) + '%', (88 + inX1) / 2, 135, '#ffe1a8', 11, 'center');
 
     drawArrow(inX1 + 8, 69);
@@ -285,30 +286,30 @@
     vessel(colonX, 40, 62, 58, bowel,
       'rgba(196,181,253,.48)', 'rgba(109,82,175,.26)',
       C.violet, 12);
-    label('结肠', colonX + 31, 120, C.dim, 10, 'center');
+    label(tr("panels.colon"), colonX + 31, 120, C.dim, 10, 'center');
     value(pct(bowel) + '%', colonX + 31, 135, '#ddd2ff', 11, 'center');
 
     drawArrow(colonX + 68, 69);
     const toiletX = colonX + 92;
     drawToilet(toiletX, 64, toilet !== '');
-    label('厕所', toiletX, 120, C.dim, 10, 'center');
-    value(toilet === 'need' ? '要去' : (toilet === 'using' ? '在用' : '—'),
+    label(tr("panels.toilet"), toiletX, 120, C.dim, 10, 'center');
+    value(toilet === 'need' ? tr("panels.need_toilet") : (toilet === 'using' ? tr("panels.using_toilet") : '—'),
       toiletX, 135, toilet ? C.cyan : 'rgba(150,180,210,.5)', 11, 'center');
 
     bar(2, 152, 150, needB, C.violet);
-    label('便意 ' + pct(needB) + '%', 158, 158, C.dim, 10);
+    label(tr("panels.bowel_prefix") + pct(needB) + '%', 158, 158, C.dim, 10);
 
     // 水 / 尿
     vessel(midX + 4, 36, 38, 68, fluid,
       'rgba(103,232,249,.45)', 'rgba(14,140,200,.26)', C.cyan, 7);
-    label('饮水', midX + 23, 120, C.dim, 10, 'center');
+    label(tr("panels.drinking"), midX + 23, 120, C.dim, 10, 'center');
     value(pct(fluid) + '%', midX + 23, 135, '#bff1ff', 11, 'center');
 
     drawArrow(midX + 46, 69);
     const bx = midX + 66;
     vessel(bx, 36, 14, 68, blood,
       'rgba(251,113,133,.5)', 'rgba(190,35,75,.28)', C.rose, 6);
-    label('血容量', bx + 7, 120, C.dim, 10, 'center');
+    label(tr("panels.blood_volume"), bx + 7, 120, C.dim, 10, 'center');
     value(pct(blood) + '%', bx + 7, 135, '#ffc9d2', 11, 'center');
 
     drawArrow(bx + 20, 69);
@@ -345,19 +346,19 @@
       ctx.restore();
     }
     ctx.restore();
-    label('膀胱', blx, 120, C.dim, 10, 'center');
+    label(tr("panels.bladder"), blx, 120, C.dim, 10, 'center');
     value(pct(bladder) + '%', blx, 135, '#ffe1a8', 11, 'center');
 
     bar(midX + 4, 152, 150, needW, C.gold);
-    label('尿意 ' + pct(needW) + '%', midX + 158, 158, C.dim, 10);
+    label(tr("panels.urine_prefix") + pct(needW) + '%', midX + 158, 158, C.dim, 10);
 
     // 激素 / 代谢
     const rows = [
-      ['胃泌素', num(s, 'gastrin'), C.cyan],
+      [tr("panels.gastrin"), num(s, 'gastrin'), C.cyan],
       ['CCK', num(s, 'cck'), C.violet],
       ['GLP-1', num(s, 'glp1'), C.green],
-      ['醛固酮', num(s, 'aldosterone'), C.rose],
-      ['甲状腺', num(s, 'thyroid'), C.gold],
+      [tr("panels.aldosterone"), num(s, 'aldosterone'), C.rose],
+      [tr("panels.thyroid"), num(s, 'thyroid'), C.gold],
     ];
     rows.forEach(([name, v, color], i) => {
       const y = 28 + i * 22;
@@ -367,8 +368,8 @@
     });
 
     dial(W - 52, 88, 22, metab);
-    label('代谢率', W - 52, 124, C.dim, 10, 'center');
-    label('今天厕所 ' + trips + ' 次', W - 2, 158, C.dim, 10, 'right');
+    label(tr("panels.metabolic_rate"), W - 52, 124, C.dim, 10, 'center');
+    label(tr("panels.toilet_today_prefix") + trips + tr("panels.times_suffix"), W - 2, 158, C.dim, 10, 'right');
   }
 
   function loop(now) {
@@ -388,7 +389,7 @@
     if (!panel) return;
     panel.classList.toggle('open', !!v);
     if (btn) {
-      btn.textContent = v ? '收起 ▴' : '展开 ▾';
+      btn.textContent = v ? tr("panels.collapse") : tr("panels.expand");
       btn.setAttribute('aria-expanded', String(!!v));
     }
     if (v) {

@@ -11,6 +11,16 @@ import os
 import subprocess
 import sys
 
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+else:
+    sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 ROOT = r"D:\你的数据目录"                       # 部署时按实际改
 NIRVANA = os.path.join(ROOT, "tools")
 PY = r"C:\你的机器人框架\venv\Scripts\python.exe"  # 部署时按实际改
@@ -27,9 +37,9 @@ def main():
     freeze = out.stdout or ""
     path = os.path.join(NIRVANA, "requirements.txt")
     with open(path, "w", encoding="utf-8") as f:
-        f.write("# 这台机器上验证过的版本（重装参考）\n")
+        f.write(t('nirvana.versions_verified_on_this_machine_reinstallation_reference'))
         f.write(freeze)
-    print("requirements.txt：%d 行" % len(freeze.splitlines()))
+    print(t('nirvana.requirements_txt_d_lines') % len(freeze.splitlines()))
 
     task_dir = os.path.join(NIRVANA, "tasks")
     os.makedirs(task_dir, exist_ok=True)
@@ -41,7 +51,7 @@ def main():
             with open(os.path.join(task_dir, name + ".xml"), "w", encoding="utf-8") as f:
                 f.write(r.stdout)
             ok += 1
-    print("计划任务导出：%d/%d 个" % (ok, len(TASKS)))
+    print(t('nirvana.scheduled_tasks_exported_d_d') % (ok, len(TASKS)))
     return 0
 
 

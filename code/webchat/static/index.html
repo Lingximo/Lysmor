@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -51,7 +51,7 @@
     border:1px solid rgba(140,180,255,.10);
   }
   .proactive .bubble{opacity:.92;border:1px dashed rgba(120,200,255,.35)}
-.proactive .bubble::after{content:' · 主动';font-size:10px;opacity:.55;margin-left:6px}
+.proactive .bubble::after{content:attr(data-proactive);font-size:10px;opacity:.55;margin-left:6px}
 .me .bubble{background:linear-gradient(135deg,rgba(70,140,255,.22),rgba(40,90,190,.18));
     border-bottom-right-radius:5px}
   .her .bubble{background:rgba(150,190,255,.07);border-bottom-left-radius:5px}
@@ -103,37 +103,41 @@
 <div id="qqbar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:99;
   background:#5a1d1d;color:#ffd7d7;font-size:13px;padding:8px 12px;text-align:center;
   border-bottom:1px solid #7a2a2a">
-  QQ 掉线了 —— 她的主动消息现在送不出去
-  <a href="http://127.0.0.1:8008/" style="color:#ffb4b4;margin-left:8px">去扫码</a>
+  <span data-i18n="primary.chat.qq_offline"></span>
+  <a href="http://127.0.0.1:8008/" style="color:#ffb4b4;margin-left:8px" data-i18n="primary.chat.qr"></a>
 </div>
 <header>
   <img src="/avatar.png" alt="" onerror="this.style.display='none'">
-  <div class="who"><b>TA</b><span>网页 · 她本人</span></div>
-  <button id="vox" class="vox" title="语音播报">🔊</button>
-  <a href="/doodle" title="陪玩时画的简笔画" style="margin-left:auto;margin-right:10px;color:#8fb8ff;text-decoration:none;font-size:13px;border:1px solid rgba(140,180,255,.25);padding:4px 10px;border-radius:10px">简笔画</a>
-  <div class="dot" id="dot" title="连接"></div>
+  <div class="who"><b>TA</b><span data-i18n="primary.chat.identity"></span></div>
+  <button id="vox" class="vox" data-i18n-title="primary.chat.voice">🔊</button>
+  <a href="/doodle" data-i18n-title="primary.chat.doodle_title" style="margin-left:auto;margin-right:10px;color:#8fb8ff;text-decoration:none;font-size:13px;border:1px solid rgba(140,180,255,.25);padding:4px 10px;border-radius:10px" data-i18n="primary.chat.doodles"></a>
+  <select data-language-select></select>
+  <div class="dot" id="dot" data-i18n-title="primary.chat.connection"></div>
 </header>
 
 <div id="gate" style="display:none;position:fixed;inset:0;background:#070b14;z-index:9;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px">
-  <div style="color:#cfe3ff;font-size:15px">输入一次口令（存在手机里，以后不用再输）</div>
-  <input id="gateInput" placeholder="口令" style="font-size:16px;padding:10px 14px;border-radius:12px;border:1px solid rgba(140,180,255,.25);background:rgba(140,180,255,.08);color:#e6eefc;width:min(320px,80vw);text-align:center">
-  <button id="gateBtn">进入</button>
+  <div style="color:#cfe3ff;font-size:15px" data-i18n="primary.chat.gate_help"></div>
+  <input id="gateInput" data-i18n-placeholder="primary.chat.token" style="font-size:16px;padding:10px 14px;border-radius:12px;border:1px solid rgba(140,180,255,.25);background:rgba(140,180,255,.08);color:#e6eefc;width:min(320px,80vw);text-align:center">
+  <button id="gateBtn" data-i18n="primary.chat.enter"></button>
 </div>
 
 <div id="log"></div>
 
 <footer>
-  <div id="preview"><img id="pv" alt=""><span class="x" id="rm">移除</span></div>
+  <div id="preview"><img id="pv" alt=""><span class="x" id="rm" data-i18n="primary.chat.remove"></span></div>
   <div class="bar">
-    <label class="pick" title="发一张图给她">🖼<input id="file" type="file" accept="image/*" hidden></label>
-    <textarea id="input" rows="1" placeholder="跟她说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
-    <button id="send">发送</button>
+    <label class="pick" data-i18n-title="primary.chat.send_image">🖼<input id="file" type="file" accept="image/*" hidden></label>
+    <textarea id="input" rows="1" data-i18n-placeholder="primary.chat.placeholder"></textarea>
+    <button id="send" data-i18n="primary.chat.send"></button>
   </div>
-  <div class="tip">走的是她真正的大脑：记忆、生理、语气都在；不走 QQ，不碰账号。</div>
+  <div class="tip" data-i18n="primary.chat.tip"></div>
 </footer>
 
+<script src="/i18n.js"></script>
 <script>
 (() => {
+  const I18N = window.LysmorI18n;
+  const t = I18N.t;
   let GATE = new URLSearchParams(location.search).get('t') || localStorage.getItem('companion_gate') || '';
   const gateBox = document.getElementById('gate');
   const gateInput = document.getElementById('gateInput');
@@ -197,7 +201,7 @@
   fileInput.addEventListener('change', () => {
     const f = fileInput.files && fileInput.files[0];
     if (!f) return;
-    if (f.size > 8 * 1024 * 1024) { alert('图太大了（最多 8MB）'); fileInput.value = ''; return; }
+    if (f.size > 8 * 1024 * 1024) { alert(t('primary.chat.image_large')); fileInput.value = ''; return; }
     const fr = new FileReader();
     fr.onload = () => {
       pendingImage = String(fr.result || '');
@@ -222,7 +226,7 @@ async function pollPush(){
       const b = addHer();
       b.textContent = it.text;
       const row = b.parentElement;
-      if(row){ row.classList.add('proactive'); }
+      if(row){ row.classList.add('proactive'); row.querySelector('.bubble').dataset.proactive = t('primary.chat.proactive'); }
     });
     if(d.last) lastPushSeq = d.last;
   }catch(e){}
@@ -233,7 +237,7 @@ async function pollPush(){
 
 async function talk(text, image) {
     busy = true; send.disabled = true;
-    addMe(text || (image ? '（发了一张图）' : ''));
+    addMe(text || (image ? t('primary.chat.sent_image') : ''));
     const bubble = addHer();
     let out = '';
     try {
@@ -242,7 +246,7 @@ async function talk(text, image) {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({text, image_b64: image || ""})
       });
-      if (r.status === 403) { askGate(); throw new Error('口令不对'); }
+      if (r.status === 403) { askGate(); throw new Error(t('primary.chat.wrong_token')); }
       if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
       const reader = r.body.getReader();
       const dec = new TextDecoder();
@@ -290,7 +294,7 @@ async function talk(text, image) {
             log.scrollTop = log.scrollHeight;
           }
           if (ev.error) {
-            bubble.textContent = out || ('（出错了：' + ev.error + '）');
+            bubble.textContent = out || t('primary.chat.response_error', {error: ev.error});
           }
           if (ev.done) {
             if (!out && ev.text) { out = ev.text; bubble.textContent = out; }
@@ -300,17 +304,17 @@ async function talk(text, image) {
             const btn = document.createElement('button');
             btn.className = 'vox';
             btn.textContent = '🔊';
-            btn.title = '重听';
+            btn.title = t('primary.chat.replay');
             btn.onclick = () => playVoice(ev.voice, bubble);
             bubble.appendChild(btn);
             if (voxOn) playVoice(ev.voice, bubble);
           }
         }
       }
-      if (!out) bubble.textContent = '（她没说话……）';
+      if (!out) bubble.textContent = t('primary.chat.silent');
       dot.classList.remove('off');
     } catch (e) {
-      bubble.textContent = '（连不上她：' + e.message + '）';
+      bubble.textContent = t('primary.chat.connection_error', {error: e.message});
       dot.classList.add('off');
     } finally {
       busy = false; send.disabled = false; input.focus();
@@ -322,7 +326,7 @@ async function talk(text, image) {
   const voxBtn = document.getElementById('vox');
   function paintVox() {
     voxBtn.classList.toggle('off', !voxOn);
-    voxBtn.title = voxOn ? '语音播报：开' : '语音播报：关';
+    voxBtn.title = voxOn ? t('primary.chat.voice_on') : t('primary.chat.voice_off');
   }
   voxBtn.onclick = () => {
     voxOn = !voxOn;
@@ -330,6 +334,7 @@ async function talk(text, image) {
     paintVox();
   };
   paintVox();
+  window.addEventListener('lysmor:languagechange', paintVox);
 
   // 2026-11-09 修"听不见"：
   // 她的回复要 10 秒以上才合成完，那时浏览器的"用户手势"早就过期了，
@@ -375,7 +380,7 @@ async function talk(text, image) {
           try {
             const b = document.createElement('button');
             b.className = 'vox';
-            b.textContent = '▶ 点这里听';
+            b.textContent = t('primary.chat.listen');
             b.onclick = () => {
               voiceUnlocked = true;
               voiceAudio.src = 'data:audio/mpeg;base64,' + b64;

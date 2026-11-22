@@ -2,6 +2,10 @@
 (function () {
   "use strict";
 
+  var i18n = window.LysmorI18n;
+  var t = i18n.t;
+  i18n.applyText(document);
+
   var token = new URLSearchParams(location.search).get("t") || "";
   var cardsBox = document.getElementById("cards");
   var clockEl = document.getElementById("clock");
@@ -13,7 +17,7 @@
   var LABELS = {};
 
   function api(path) {
-    return fetch(path, { headers: { "X-Gate-Token": token } })
+    return fetch(path, { headers: { "X-Gate-Token": token, "Accept-Language": i18n.language() } })
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
@@ -27,12 +31,15 @@
       var v = state.vitals[k];
       var card = document.createElement("div");
       card.className = "card";
-      card.title = state.notes[k] || "";
+      var noteKey = "services.vitalNotes." + k;
+      var labelKey = "services.vitals." + k;
+      card.title = t(noteKey) === noteKey ? (state.notes[k] || "") : t(noteKey);
       var pct = Math.round(v * 100);
       card.innerHTML =
-        '<div class="label">' + state.labels[k] + "</div>" +
+        '<div class="label"></div>' +
         '<div class="value">' + pct + "%</div>" +
         '<div class="bar"><div></div></div>';
+      card.querySelector(".label").textContent = t(labelKey) === labelKey ? (state.labels[k] || k) : t(labelKey);
       var fill = card.querySelector(".bar > div");
       fill.style.width = pct + "%";
       fill.style.background = COLORS[i % COLORS.length];
@@ -63,7 +70,8 @@
     ctx.font = "12px system-ui";
     keys.forEach(function (k, i) {
       ctx.fillStyle = COLORS[i % COLORS.length];
-      ctx.fillText(LABELS[k] || k, pad + i * 64, 14);
+      var key = "services.vitals." + k;
+      ctx.fillText(t(key) === key ? (LABELS[k] || k) : t(key), pad + i * 64, 14);
     });
   }
 
@@ -71,9 +79,9 @@
     api("/api/state").then(function (state) {
       renderCards(state);
       LABELS = state.labels || {};
-      clockEl.textContent = new Date(state.t * 1000).toLocaleTimeString();
+      clockEl.textContent = new Date(state.t * 1000).toLocaleTimeString(i18n.language());
     }).catch(function (e) {
-      clockEl.textContent = "连接失败：" + e.message;
+      clockEl.textContent = t("services.connectionFailed", { error: e.message });
     }).then(function () {
       return api("/api/trend");
     }).then(function (d) {
@@ -82,6 +90,7 @@
     }).catch(function () {});
   }
 
+  addEventListener("lysmor:languagechange", refresh);
   refresh();
   setInterval(refresh, 3000);
 })();

@@ -32,6 +32,16 @@ try:
 except Exception:  # noqa: BLE001
     pass
 
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+else:
+    sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 ROOT = EXPECTED.get("root", r"D:\你的数据目录")
 LAUNCHER = EXPECTED.get("bot_launcher", r"C:\你的机器人框架")
 INSTANCE_ID = EXPECTED.get("bot_instance", "")
@@ -59,16 +69,16 @@ def run(cmd, timeout=12):
 def check_os():
     expect = EXPECTED.get("os", "Windows 10/11 x64")
     if platform.system() != "Windows":
-        add("FAIL", "操作系统", "%s（不是 Windows）" % platform.system(), expect)
+        add("FAIL", t('nirvana.os'), t('nirvana.s_not_windows') % platform.system(), expect)
         return
-    add("OK", "操作系统", platform.platform(), "需要 %s" % expect)
+    add("OK", t('nirvana.os'), platform.platform(), t('nirvana.requires_s') % expect)
 
 
 def check_python():
     want = EXPECTED.get("python", "3.12.x")
     v = "%d.%d.%d" % sys.version_info[:3]
     ok = (sys.version_info[:2] == (3, 12))
-    add("OK" if ok else "FAIL", "Python", v, "需要 %s（python.org，勾选 Add to PATH）" % want)
+    add("OK" if ok else "FAIL", "Python", v, t('nirvana.requires_s_python_org_enable_add_to') % want)
 
 
 def check_bot():
@@ -76,7 +86,7 @@ def check_bot():
     core = os.path.join(LAUNCHER, "instances", INSTANCE_ID, "core") if INSTANCE_ID else LAUNCHER
     pyproj = os.path.join(core, "pyproject.toml")
     if not os.path.isdir(core):
-        add("FAIL", "机器人框架", "未找到 %s" % core, "复制整个框架到同路径，或按其官方文档重装")
+        add("FAIL", t('nirvana.bot_framework'), t('nirvana.not_found_s') % core, t('nirvana.copy_the_complete_framework_to_the_same'))
         return
     actual = ""
     try:
@@ -86,20 +96,20 @@ def check_bot():
     except Exception:  # noqa: BLE001
         pass
     if actual:
-        add("OK" if (not want or actual == want) else "WARN", "机器人框架版本", actual,
-            "期望 %s；版本不一致插件可能不兼容" % want)
+        add("OK" if (not want or actual == want) else "WARN", t('nirvana.bot_framework_version'), actual,
+            t('nirvana.expected_s_plugins_may_be_incompatible_with') % want)
     else:
-        add("WARN", "机器人框架版本", "读不到", "期望 %s" % want)
+        add("WARN", t('nirvana.bot_framework_version'), t('nirvana.unavailable'), t('nirvana.expected_s') % want)
 
 
 def check_venv():
     venv = os.path.join(LAUNCHER, "instances", INSTANCE_ID, "venv", "Scripts", "python.exe") \
         if INSTANCE_ID else ""
     if not venv or not os.path.exists(venv):
-        add("WARN", "机器人 venv", "未找到 %s" % (venv or "(未配置实例)"),
-            "复制整个框架（含 venv）到同路径；或重建 venv 并 pip install -r requirements.txt")
+        add("WARN", t('nirvana.bot_virtual_environment'), t('nirvana.not_found_s') % (venv or t('nirvana.instance_not_configured')),
+            t('nirvana.copy_the_complete_framework_including_venv_to'))
         return
-    add("OK", "机器人 venv", run([venv, "--version"]).strip() or venv)
+    add("OK", t('nirvana.bot_virtual_environment'), run([venv, "--version"]).strip() or venv)
 
 
 def check_ollama():
@@ -115,22 +125,22 @@ def check_ollama():
             if line.strip():
                 models.add(line.split()[0])
     if not models:
-        add("FAIL", "Ollama", "服务 11434 不可用，或 ollama 不在 PATH",
-            "安装 Ollama 并启动 ollama serve")
+        add("FAIL", "Ollama", t('nirvana.service_on_port_is_unavailable_or_ollama'),
+            t('nirvana.install_ollama_and_start_ollama_serve'))
         return
     want = EXPECTED.get("ollama_models") or []
     missing = [m for m in want if not any(x == m or x.startswith(m + ":") for x in models)]
     if missing:
-        add("FAIL", "Ollama 模型", "缺: %s" % ", ".join(missing),
+        add("FAIL", t('nirvana.ollama_models'), t('nirvana.missing_s') % ", ".join(missing),
             "ollama pull %s" % "；ollama pull ".join(missing))
     else:
-        add("OK", "Ollama 模型", ", ".join(want), "视觉/记忆检索齐全")
+        add("OK", t('nirvana.ollama_models'), ", ".join(want), t('nirvana.vision_and_memory_retrieval_models_available'))
 
 
 def check_ffmpeg():
     exe = shutil.which("ffmpeg")
     if not exe:
-        add("WARN", "ffmpeg", "不在 PATH", "装 essentials 构建，把 bin 加进 PATH（语音要）")
+        add("WARN", "ffmpeg", t('nirvana.not_on_path'), t('nirvana.install_the_essentials_build_and_add_bin'))
         return
     out = run([exe, "-version"])
     add("OK", "ffmpeg", (out.splitlines()[0] if out else "ffmpeg")[:80])
@@ -138,20 +148,20 @@ def check_ffmpeg():
 
 def check_im():
     if not os.path.exists(IM_PATH):
-        add("WARN", "IM 客户端", "未找到 %s" % IM_PATH, "自行安装并**扫码登录**；本项目不包含 IM 本体")
+        add("WARN", t('nirvana.im_client'), t('nirvana.not_found_s') % IM_PATH, t('nirvana.install_separately_and_sign_in_with_the'))
         return
     ps = "(Get-Item -LiteralPath '%s').VersionInfo.FileVersion" % IM_PATH
     out = run(["powershell", "-NoProfile", "-Command", ps]).strip()
     want = EXPECTED.get("im_version", "")
     if want and out and out != want:
-        add("WARN", "IM 版本", out, "期望 %s；不要自动升级" % want)
+        add("WARN", t('nirvana.im_version'), out, t('nirvana.expected_s_do_not_upgrade_automatically') % want)
     else:
-        add("OK", "IM 客户端", out or "存在", "版本锁 %s" % want)
+        add("OK", t('nirvana.im_client'), out or t('nirvana.present'), t('nirvana.pinned_version_s') % want)
 
 
 def check_napcat():
     if not os.path.isdir(NAPCAT_APP):
-        add("WARN", "协议接入", "未找到 %s" % NAPCAT_APP, "按其官方文档安装")
+        add("WARN", t('nirvana.protocol_adapter'), t('nirvana.not_found_s') % NAPCAT_APP, t('nirvana.install_using_its_official_documentation'))
         return
     lock = os.path.abspath(os.path.join(NAPCAT_APP, "..", "version-lock.json"))
     actual = ""
@@ -160,16 +170,16 @@ def check_napcat():
             actual = str(json.load(f).get("version") or "")
     except Exception:  # noqa: BLE001
         pass
-    add("OK", "协议接入", actual or "存在")
+    add("OK", t('nirvana.protocol_adapter'), actual or t('nirvana.present'))
 
 
 def check_startup():
     need = ["start.ps1", "start-im.ps1"]
     missing = [n for n in need if not os.path.exists(os.path.join(STARTUP, n))]
     if missing:
-        add("WARN", "启动脚本", "缺: %s" % ", ".join(missing), "从备份包 startup/ 恢复")
+        add("WARN", t('nirvana.startup_scripts'), t('nirvana.missing_s') % ", ".join(missing), t('nirvana.restore_startup_from_the_backup'))
     else:
-        add("OK", "启动脚本", "start / start-im")
+        add("OK", t('nirvana.startup_scripts'), "start / start-im")
 
 
 def expected_docs():
@@ -186,12 +196,12 @@ def expected_docs():
 
 def check_data():
     if not os.path.isdir(ROOT):
-        add("FAIL", "数据目录", "不存在（典型新电脑）",
-            "先跑 restore.py --file <备份包>，再回来看这条")
+        add("FAIL", t('nirvana.data_directory'), t('nirvana.missing_usually_a_new_computer'),
+            t('nirvana.run_restore_py_file_backup_first_then'))
         return
     db = os.path.join(ROOT, "memory", "memory.db")
     if not os.path.exists(db):
-        add("FAIL", "记忆库", "缺 %s" % db, "restore.py 恢复记忆")
+        add("FAIL", t('nirvana.memory_database'), t('nirvana.missing_s_32754') % db, t('nirvana.restore_memories_with_restore_py'))
     else:
         try:
             con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
@@ -200,28 +210,28 @@ def check_data():
             con.close()
             want = expected_docs()
             if integ != "ok":
-                add("FAIL", "记忆库", "%d 条，integrity=%s" % (docs, integ), "恢复/备份")
+                add("FAIL", t('nirvana.memory_database'), t('nirvana.d_records_integrity_s') % (docs, integ), t('nirvana.restore_backup'))
             elif want and docs < want:
-                add("WARN", "记忆库", "%d 条（期望 %d）" % (docs, want), "可能用了旧包")
+                add("WARN", t('nirvana.memory_database'), t('nirvana.d_records_expected_d') % (docs, want), t('nirvana.an_older_backup_may_have_been_used'))
             else:
-                add("OK", "记忆库", "%d 条，integrity=ok" % docs)
+                add("OK", t('nirvana.memory_database'), t('nirvana.d_records_integrity_ok') % docs)
         except Exception as exc:  # noqa: BLE001
-            add("FAIL", "记忆库", "读不了: %s" % exc, "恢复记忆库")
+            add("FAIL", t('nirvana.memory_database'), t('nirvana.cannot_read_s') % exc, t('nirvana.restore_the_memory_database'))
     plugins = os.path.join(LAUNCHER, "instances", INSTANCE_ID, "core", "data", "plugins") \
         if INSTANCE_ID else os.path.join(LAUNCHER, "data", "plugins")
     if plugins and os.path.isdir(plugins):
         mine = [d for d in os.listdir(plugins) if os.path.isdir(os.path.join(plugins, d))]
         want = int(EXPECTED.get("plugins") or 0)
-        add("OK" if (not want or len(mine) >= want) else "WARN", "插件",
-            "%d 个" % len(mine), "期望 %d 个；restore.py 会铺 plugins/" % want)
+        add("OK" if (not want or len(mine) >= want) else "WARN", t('nirvana.plugins'),
+            t('nirvana.d_items') % len(mine), t('nirvana.expected_d_restore_py_restores_plugins') % want)
     else:
-        add("WARN", "插件", "插件目录不存在", "先建机器人框架，再 restore.py")
+        add("WARN", t('nirvana.plugins'), t('nirvana.plugin_directory_is_missing'), t('nirvana.install_the_bot_framework_first_then_run'))
     tasks = os.path.join(ROOT, "tools", "tasks")
     if os.path.isdir(tasks):
         n = len([x for x in os.listdir(tasks) if x.endswith(".xml")])
-        add("OK" if n >= 1 else "WARN", "计划任务清单", "%d 个 XML" % n, "用 schtasks 导入")
+        add("OK" if n >= 1 else "WARN", t('nirvana.scheduled_task_inventory'), t('nirvana.d_xml_files') % n, t('nirvana.import_using_schtasks'))
     else:
-        add("WARN", "计划任务清单", "缺 tools\\tasks", "restore.py 恢复")
+        add("WARN", t('nirvana.scheduled_task_inventory'), t('nirvana.missing_tools_tasks'), t('nirvana.restore_using_restore_py'))
 
 
 def check_comfy():
@@ -230,9 +240,9 @@ def check_comfy():
         r"D:\Comfy-Desktop\ComfyUI\main.py",
     ]
     if any(os.path.exists(p) for p in candidates):
-        add("OK", "画画（可选）", "已安装（按需启动）", "", optional=True)
+        add("OK", t('nirvana.drawing_optional'), t('nirvana.installed_start_when_needed'), "", optional=True)
     else:
-        add("WARN", "画画（可选）", "未安装（不影响聊天/记忆）", "要画画再装 ComfyUI + 模型", optional=True)
+        add("WARN", t('nirvana.drawing_optional'), t('nirvana.not_installed_chat_and_memory_remain_available'), t('nirvana.install_comfyui_and_models_when_drawing_is'), optional=True)
 
 
 def main():
@@ -261,8 +271,8 @@ def main():
                          ensure_ascii=False, indent=2))
     else:
         if not quiet:
-            print("== 环境体检 ==")
-            print("机器：%s\n" % platform.platform())
+            print(t('nirvana.environment_audit'))
+            print(t('nirvana.machine_s') % platform.platform())
         for r in RESULTS:
             if quiet and r["level"] == "OK":
                 continue
@@ -271,11 +281,11 @@ def main():
             if r["hint"] and r["level"] != "OK":
                 print("        -> %s" % r["hint"])
         if not quiet:
-            print("\n结果：FAIL=%d WARN=%d" % (len(fails), len(warns)))
+            print(t('nirvana.result_fail_d_warn_d') % (len(fails), len(warns)))
             if fails:
-                print("先补 FAIL 项，再跑 restore.py / check.py。")
+                print(t('nirvana.resolve_fail_items_first_then_run_restore'))
             else:
-                print("核心项齐全；可以 restore.py --file <备份包> 接回来。")
+                print(t('nirvana.core_requirements_are_available_restore_with_restore'))
 
     if fails:
         return 1

@@ -9,22 +9,17 @@
 """
 import os
 import secrets
+import sys
+from html import escape
 from urllib.parse import parse_qs, urlparse
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import language_from_header, t
 
 TOKEN_PATH = r"D:\你的数据目录\gate_token.txt"
 COOKIE_NAME = "companion_gate"
 LOCAL_ADDRS = ("127.0.0.1", "::1")
-
-DENY_HTML = (
-    "<!doctype html><meta charset='utf-8'>"
-    "<body style='font-family:sans-serif;background:#0f1720;color:#e8f1f8;"
-    "padding:60px;text-align:center'>"
-    "<h2>需要访问口令</h2>"
-    "<p style='color:#8fa6b8'>这些页面只给你的电脑和手机看。<br>"
-    "口令在电脑的 <code>D:\\你的数据目录\\gate_token.txt</code>，"
-    "地址后面加 <code>?t=口令</code> 就行。</p>"
-)
-
 
 def get_token():
     try:
@@ -52,18 +47,26 @@ def check(handler):
     if handler.client_address[0] in LOCAL_ADDRS:
         return True, False
     given = (parse_qs(urlparse(handler.path).query).get("t") or [""])[0]
-    if given and secrets.compare_digest(given, TOKEN):
+    if given and secrets.compare_digest(given.encode(), TOKEN.encode()):
         return True, True
     cookie = handler.headers.get("Cookie") or ""
     for part in cookie.split(";"):
         key, _, value = part.strip().partition("=")
-        if key == COOKIE_NAME and value and secrets.compare_digest(value, TOKEN):
+        if key == COOKIE_NAME and value and secrets.compare_digest(value.encode(), TOKEN.encode()):
             return True, False
     return False, False
 
 
 def deny(handler):
-    body = DENY_HTML.encode("utf-8")
+    locale = language_from_header(handler.headers.get("Accept-Language"))
+    body = (
+        "<!doctype html><meta charset='utf-8'>"
+        "<body style='font-family:sans-serif;background:#0f1720;color:#e8f1f8;"
+        "padding:60px;text-align:center'>"
+        "<h2>" + escape(t("http.auth.required", locale=locale)) + "</h2><p>"
+        + escape(t("http.auth.private", locale=locale)) + "<br>"
+        + escape(t("http.auth.instructions", locale=locale, path=TOKEN_PATH)) + "</p>"
+    ).encode("utf-8")
     handler.send_response(403)
     handler.send_header("Content-Type", "text/html; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))

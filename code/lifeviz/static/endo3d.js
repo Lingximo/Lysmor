@@ -12,6 +12,7 @@
  * 数据：window.__endoState
  */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('endo-flow');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -109,9 +110,9 @@
 
     // ---------- 中轴：三个节点 ----------
     const axis = [
-      { y: 118, v: crh, label: '下丘脑' },
-      { y: 0, v: acth, label: '垂体' },
-      { y: -118, v: cor, label: '肾上腺' },
+      { y: 118, v: crh, get label() { return tr("panels.hypothalamus"); } },
+      { y: 0, v: acth, get label() { return tr("panels.pituitary"); } },
+      { y: -118, v: cor, get label() { return tr("panels.adrenal"); } },
     ];
     polyline(lines, [{ x: 0, y: 128, z: 0 }, { x: 0, y: -128, z: 0 }],
       'rgba(248,113,113,.85)', 0.55, 1.4);

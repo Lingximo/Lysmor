@@ -17,6 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import configure  # noqa: E402
+from i18n import language, language_from_header, locale_context, normalize_locale, send_browser_asset, t  # noqa: E402
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer  # noqa: E402
 from urllib.parse import urlparse  # noqa: E402
@@ -34,6 +35,7 @@ def normalize(cfg):
     d = configure.DEFAULTS
     out = {
         "data_dir": str(cfg.get("data_dir") or d["data_dir"]),
+        "language": normalize_locale(cfg.get("language")) or d["language"],
         "user_dir": str(cfg.get("user_dir") or d["user_dir"]),
         "qq": str(cfg.get("qq") or d["qq"]),
         "qq2": str(cfg.get("qq2") or d["qq2"]),
@@ -62,6 +64,22 @@ def normalize(cfg):
 class Handler(BaseHTTPRequestHandler):
     server_version = "companion-setup/0.1"
 
+    def handle_one_request(self):
+        with locale_context(None):
+            try:
+                return super().handle_one_request()
+            finally:
+                if getattr(self, "_language_context", None) is not None:
+                    self._language_context.__exit__(None, None, None)
+                    self._language_context = None
+
+    def parse_request(self):
+        parsed = super().parse_request()
+        if parsed:
+            self._language_context = locale_context(language_from_header(self.headers.get("Accept-Language")))
+            self._language_context.__enter__()
+        return parsed
+
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
@@ -72,6 +90,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if send_browser_asset(self, parsed.path):
+            return
         if parsed.path == "/api/defaults":
             return self._json(configure.DEFAULTS)
         if parsed.path == "/api/check":
@@ -83,7 +103,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
                 hub = int(cfg.get("ports", {}).get("hub") or 8009)
                 token = cfg.get("gate_token") or ""
-                return self._json({"url": "http://127.0.0.1:%d/?t=%s" % (hub, token)})
+                return self._json({"url": "http://127.0.0.1:%d/?t=%s&lang=%s" % (hub, token, language())})
             except Exception:
                 return self._json({"url": None})
         if parsed.path == "/api/identity":
@@ -150,6 +170,7 @@ class Handler(BaseHTTPRequestHandler):
                 req = json.loads(raw.decode("utf-8"))
                 det = configure.autodetect()
                 cfg = {
+                    "language": normalize_locale(req.get("language")) or configure.DEFAULTS["language"],
                     "data_dir": configure.DEFAULTS["data_dir"],
                     "user_dir": configure.DEFAULTS["user_dir"],
                     "qq": str(req.get("user_qq") or configure.DEFAULTS["qq"]),
@@ -218,7 +239,7 @@ def main():
     if sys.stdout is not None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("配置向导已启动：http://%s:%d/  （只监听本机）" % (HOST, PORT))
+    print(t('setup.server.started') % (HOST, PORT))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

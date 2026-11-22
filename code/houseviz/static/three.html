@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TA · 大平层 3D</title>
+<title data-i18n="panels.house_3d_title">TA · 大平层 3D</title>
 <style>
   :root { --cyan:#67e8f9; --line:rgba(103,232,249,.22); }
   * { box-sizing:border-box; }
@@ -90,21 +90,24 @@
   #tvbox video { display:block; width:100%; max-height:72vh; background:#000; }
   @media (max-width:720px){ #actbar { right:10px; bottom:64px; max-width:240px; } }
 </style>
+<script src="/i18n.js"></script>
 </head>
 <body>
+<div id="panel-language" style="position:fixed;right:12px;bottom:8px;z-index:50;pointer-events:auto"></div>
+<script>LysmorI18n.mountLanguageSelector(document.getElementById("panel-language"));</script>
 <canvas id="c3d"></canvas>
 <canvas id="live2d"></canvas>
 <div id="vignette"></div>
 
 <div class="hud top-left">
-  <div class="title">TA · <b>大平层 3D</b></div>
-  <div class="sub" id="subhint">拖拽平移 · 滚轮缩放 · 遮挡自动透明</div>
+  <div class="title">TA · <b><span data-i18n="panels.house_3d">大平层 3D</span></b></div>
+  <div class="sub" id="subhint"><span data-i18n="panels.overview_hint">拖拽平移 · 滚轮缩放 · 遮挡自动透明</span></div>
   <div class="card">
-    <div><span class="k">位置</span><span class="v" id="where">——</span></div>
-    <div><span class="k">正在</span><span class="v" id="activity">——</span></div>
-    <div><span class="k">情绪</span><span class="v" id="emotion">平静</span></div>
-    <div><span class="k">冰箱</span><span class="v" id="fridge">——</span></div>
-    <div><span class="k">观看</span><span class="v">只读 · 不写入记忆</span></div>
+    <div><span class="k"><span data-i18n="panels.position">位置</span></span><span class="v" id="where">——</span></div>
+    <div><span class="k"><span data-i18n="panels.activity_prefix">正在</span></span><span class="v" id="activity">——</span></div>
+    <div><span class="k"><span data-i18n="panels.emotion">情绪</span></span><span class="v" id="emotion"><span data-i18n="panels.calm">平静</span></span></div>
+    <div><span class="k"><span data-i18n="panels.fridge">冰箱</span></span><span class="v" id="fridge">——</span></div>
+    <div><span class="k"><span data-i18n="panels.watching">观看</span></span><span class="v"><span data-i18n="panels.read_only">只读 · 不写入记忆</span></span></div>
   </div>
 </div>
 
@@ -112,48 +115,48 @@
   <div class="clock" id="clock">--:--</div>
   <div class="mode" id="mode">——</div>
 </div>
-<button class="viewbtn" id="viewbtn" title="快捷键 F：切换第一人称 / 俯瞰">第一人称视角</button>
+<button class="viewbtn" id="viewbtn" title="快捷键 F：切换第一人称 / 俯瞰" data-i18n-title="panels.first_person_shortcut"><span data-i18n="panels.first_person">第一人称视角</span></button>
 
-<div class="hud hint" id="hint">拖拽平移 · 滚轮缩放 · <a href="#" id="fp-enter">TA第一人称</a> · <a href="/2d">回到 2D 平面图</a></div>
+<div class="hud hint" id="hint"><span data-i18n="panels.pan_zoom_prefix">拖拽平移 · 滚轮缩放 ·</span> <a href="#" id="fp-enter"><span data-i18n="panels.fp_short">TA第一人称</span></a> · <a href="/2d"><span data-i18n="panels.floor_plan">回到 2D 平面图</span></a></div>
 <div class="hud fpbar" id="fpbar">
-  <span class="tag">TA第一人称</span>
-  <button data-fp="her">她此刻</button>
-  <button data-room="her_room">她的房间</button>
-  <button data-room="living">客厅</button>
-  <button data-room="kitchen">厨房</button>
-  <button data-room="toilet">厕所</button>
-  <button data-room="gallery">画廊</button>
-  <button data-room="balcony">阳台</button>
-  <button data-room="dad_room">我的房间</button>
-  <button data-fp="exit">俯瞰</button>
+  <span class="tag"><span data-i18n="panels.fp_short">TA第一人称</span></span>
+  <button data-fp="her"><span data-i18n="panels.her_now">她此刻</span></button>
+  <button data-room="her_room"><span data-i18n="panels.her_room">她的房间</span></button>
+  <button data-room="living"><span data-i18n="panels.living_room">客厅</span></button>
+  <button data-room="kitchen"><span data-i18n="panels.kitchen">厨房</span></button>
+  <button data-room="toilet"><span data-i18n="panels.toilet">厕所</span></button>
+  <button data-room="gallery"><span data-i18n="panels.gallery">画廊</span></button>
+  <button data-room="balcony"><span data-i18n="panels.balcony">阳台</span></button>
+  <button data-room="dad_room"><span data-i18n="panels.my_room">我的房间</span></button>
+  <button data-fp="exit"><span data-i18n="panels.overlook">俯瞰</span></button>
 </div>
 <div class="hud gallerybar" id="gallerybar">
-  <span>画廊视角</span>
-  <button data-gview="gallery-entry">入口</button>
-  <button data-gview="gallery-west">西墙</button>
-  <button data-gview="gallery-east">东墙</button>
-  <button data-gview="gallery-north">北墙</button>
+  <span><span data-i18n="panels.gallery_view">画廊视角</span></span>
+  <button data-gview="gallery-entry"><span data-i18n="panels.entry">入口</span></button>
+  <button data-gview="gallery-west"><span data-i18n="panels.west_wall">西墙</span></button>
+  <button data-gview="gallery-east"><span data-i18n="panels.east_wall">东墙</span></button>
+  <button data-gview="gallery-north"><span data-i18n="panels.north_wall">北墙</span></button>
 </div>
 <div class="bubble" id="bubble" style="display:none">——</div>
 
 <div id="actbar">
-  <button data-act="pet">摸头</button>
-  <button data-act="feed">喂饭</button>
-  <button data-act="water">倒水</button>
-  <button data-act="play">陪玩</button>
-  <button data-act="wake">叫醒</button>
-  <button data-act="lamp">灯</button>
-  <button id="tvbtn">电视</button>
-  <button id="qbtn">画质：中</button>
+  <button data-act="pet"><span data-i18n="panels.pet">摸头</span></button>
+  <button data-act="feed"><span data-i18n="panels.feed">喂饭</span></button>
+  <button data-act="water"><span data-i18n="panels.water">倒水</span></button>
+  <button data-act="play"><span data-i18n="panels.play">陪玩</span></button>
+  <button data-act="wake"><span data-i18n="panels.wake">叫醒</span></button>
+  <button data-act="lamp"><span data-i18n="panels.lamp">灯</span></button>
+  <button id="tvbtn"><span data-i18n="panels.tv">电视</span></button>
+  <button id="qbtn"><span data-i18n="panels.quality_medium">画质：中</span></button>
 </div>
 
 <div id="tvmodal">
   <div id="tvbox">
-    <div class="bar"><span>把屏幕投到房间电视</span><button id="tvlook">让她看一眼</button><button id="tvclose">关掉</button></div>
+    <div class="bar"><span><span data-i18n="panels.cast_screen">把屏幕投到房间电视</span></span><button id="tvlook"><span data-i18n="panels.look_once">让她看一眼</span></button><button id="tvclose"><span data-i18n="panels.close">关掉</span></button></div>
     <video id="tvvideo" autoplay muted playsinline></video>
   </div>
 </div>
-<div id="loading">正在搭建她的大平层…</div>
+<div id="loading"><span data-i18n="panels.building_house">正在搭建她的大平层…</span></div>
 
 <script src="/static/vendor/three.min.js"></script>
 <script src="/static/vendor/GLTFLoader.js"></script>

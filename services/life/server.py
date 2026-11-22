@@ -28,6 +28,9 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from i18n import send_browser_asset, language_from_header, t
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE, "state.json")
 
@@ -35,12 +38,12 @@ CONFIG = {"gate_token": "", "port": 8005}
 
 # key: (中文名, 基线, 半衰期小时, 每小时漂移(趋于1), 说明)
 VITALS = {
-    "energy":       ("精力", 0.80, 4.0, -0.05, "做事消耗，睡眠恢复"),
-    "hunger":       ("饥饿", 0.15, 6.0, +0.28, "随时间上升，进食下降"),
-    "thirst":       ("口渴", 0.15, 5.0, +0.22, "随时间上升，喝水下降"),
-    "sleep_pressure": ("困意", 0.10, 3.0, +0.18, "清醒越久越困，睡眠清零"),
-    "mood":         ("情绪", 0.60, 2.0,  0.00, "随机扰动 + 回稳到基线"),
-    "stress":       ("压力", 0.30, 3.0, -0.10, "压力随时间回落，事件推高"),
+    "energy":       ("services.vitals.energy", 0.80, 4.0, -0.05, "services.vitalNotes.energy"),
+    "hunger":       ("services.vitals.hunger", 0.15, 6.0, +0.28, "services.vitalNotes.hunger"),
+    "thirst":       ("services.vitals.thirst", 0.15, 5.0, +0.22, "services.vitalNotes.thirst"),
+    "sleep_pressure": ("services.vitals.sleep_pressure", 0.10, 3.0, +0.18, "services.vitalNotes.sleep_pressure"),
+    "mood":         ("services.vitals.mood", 0.60, 2.0,  0.00, "services.vitalNotes.mood"),
+    "stress":       ("services.vitals.stress", 0.30, 3.0, -0.10, "services.vitalNotes.stress"),
 }
 
 
@@ -54,7 +57,7 @@ def load_config(path):
                     if k in data:
                         CONFIG[k] = data[k]
         except Exception as exc:  # noqa: BLE001
-            print("! 读配置失败：%s" % exc)
+            print(t("services.cli.configReadFailed", error=exc))
 
 
 def clamp(v):
@@ -90,7 +93,7 @@ class LifeModel:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
             os.replace(tmp, STATE_FILE)
         except Exception as exc:  # noqa: BLE001
-            print("! 状态落盘失败：%s" % exc)
+            print(t("services.cli.stateSaveFailed", error=exc))
 
     # ---- 内部接口：接真实事件时用这个（HTTP 面不暴露） ----
     def change(self, key, delta, reason=""):
@@ -126,10 +129,10 @@ class LifeModel:
             self._last_save = now
             self._save()
 
-    def snapshot(self):
+    def snapshot(self, locale=None):
         with self.lock:
-            return {"vitals": dict(self.state), "labels": {k: v[0] for k, v in VITALS.items()},
-                    "notes": {k: v[4] for k, v in VITALS.items()}, "t": time.time()}
+            return {"vitals": dict(self.state), "labels": {k: t(v[0], locale=locale) for k, v in VITALS.items()},
+                    "notes": {k: t(v[4], locale=locale) for k, v in VITALS.items()}, "t": time.time()}
 
     def trend_json(self):
         with self.lock:
@@ -150,7 +153,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(403)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
-        self.wfile.write(json.dumps({"error": "口令不对"}, ensure_ascii=False).encode("utf-8"))
+        self.wfile.write(json.dumps({"error": t("services.api.invalidToken", locale=language_from_header(self.headers.get("Accept-Language")))}, ensure_ascii=False).encode("utf-8"))
 
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -162,12 +165,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if send_browser_asset(self, parsed.path):
+            return
         # 数据接口挂门禁；静态壳文件公开（浏览器加载资源时带不上口令）
         if parsed.path in ("/api/state", "/api/trend"):
             if not self._authed():
                 return self._deny()
             if parsed.path == "/api/state":
-                return self._json(MODEL.snapshot())
+                return self._json(MODEL.snapshot(locale=language_from_header(self.headers.get("Accept-Language"))))
             return self._json(MODEL.trend_json())
         rel = parsed.path.strip("/") or "index.html"
         if ".." in rel or rel.startswith("/"):
@@ -220,12 +225,12 @@ def main():
         CONFIG["gate_token"] = args.token
     if not CONFIG["gate_token"]:
         CONFIG["gate_token"] = secrets.token_urlsafe(12)
-        print("开发模式：本次口令 t=%s" % CONFIG["gate_token"])
+        print(t("services.cli.developmentToken", token=CONFIG["gate_token"]))
 
     threading.Thread(target=loop, daemon=True).start()
     srv = ThreadingHTTPServer((args.host, port), Handler)
-    print("生命面板已启动：http://%s:%d/?t=%s" % (args.host, port, CONFIG["gate_token"]))
-    print("状态自行演化；面板只读。Ctrl+C 退出。")
+    print(t("services.cli.started", service=t("services.life.title"), host=args.host, port=port, token=CONFIG["gate_token"]))
+    print(t("services.cli.lifeHelp"))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

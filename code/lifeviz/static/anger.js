@@ -2,6 +2,7 @@
    主火舌高度 = 怒气（anger），底部余烬 = 记仇（resentment），
    记仇高了会结霜——就是"冷战"的样子。 */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('anger-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -69,8 +70,8 @@
     const cold = resent > 0.45;
     const status = document.getElementById('anger-status');
     if (status) {
-      status.textContent = cold ? '冷战 · 还记着'
-        : (anger > 0.65 ? '正在生气' : (anger > 0.30 ? '有点火' : '平静'));
+      status.textContent = cold ? tr("panels.cold_war")
+        : (anger > 0.65 ? tr("panels.angry") : (anger > 0.30 ? tr("panels.irritated") : tr("panels.calm")));
       status.classList.toggle('hot', anger > 0.30 && !cold);
       status.classList.toggle('cold', cold);
     }

@@ -16,6 +16,10 @@ import urllib.parse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset
+
 sys.path.insert(0, r"D:\你的数据目录\tools")
 import gate  # noqa: E402  共用访问口令
 
@@ -462,6 +466,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        asset = browser_asset(path)
+        if asset is not None:
+            body, mime = asset
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         try:
             if path == "/api/graph":
                 nodes, links = load_graph()

@@ -2,6 +2,10 @@
 (function () {
   "use strict";
 
+  var i18n = window.LysmorI18n;
+  var t = i18n.t;
+  i18n.applyText(document);
+
   var token = new URLSearchParams(location.search).get("t") || "";
   var canvas = document.getElementById("room");
   var ctx = canvas.getContext("2d");
@@ -100,7 +104,7 @@
     ctx.beginPath(); ctx.arc(op.x, op.y, 6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#7c8fa8";
     ctx.font = "12px system-ui";
-    ctx.fillText(oc.name || "TA", op.x - 8, op.y - 12);
+    ctx.fillText(oc.name || t("services.house.occupant"), op.x - 8, op.y - 12);
   }
 
   function pickFurniture(mx, my) {
@@ -114,7 +118,7 @@
   }
 
   function load() {
-    fetch("/api/house", { headers: { "X-Gate-Token": token } })
+    fetch("/api/house", { headers: { "X-Gate-Token": token, "Accept-Language": i18n.language() } })
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
@@ -125,7 +129,7 @@
         draw();
       })
       .catch(function (e) {
-        document.getElementById("title").textContent = "加载失败：" + e.message;
+        document.getElementById("title").textContent = t("services.loadFailed", { error: e.message });
       });
   }
 
@@ -151,7 +155,11 @@
     var it = pickFurniture(e.clientX, e.clientY);
     if (it) {
       tip.hidden = false;
-      tip.innerHTML = it.name + '<div class="note">' + (it.note || "") + "</div>";
+      tip.textContent = it.name || "";
+      var note = document.createElement("div");
+      note.className = "note";
+      note.textContent = it.note || "";
+      tip.appendChild(note);
       tip.style.left = Math.min(e.clientX + 14, innerWidth - 260) + "px";
       tip.style.top = Math.min(e.clientY + 14, innerHeight - 80) + "px";
     } else {
@@ -159,6 +167,7 @@
     }
   });
 
+  addEventListener("lysmor:languagechange", function () { tip.hidden = true; draw(); });
   addEventListener("resize", draw);
   load();
 })();

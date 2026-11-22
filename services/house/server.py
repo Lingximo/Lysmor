@@ -23,6 +23,9 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from i18n import send_browser_asset, language_from_header, t
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, "data")
 CONFIG = {"gate_token": "", "port": 8007}
@@ -38,7 +41,7 @@ def load_config(path):
                     if k in data:
                         CONFIG[k] = data[k]
         except Exception as exc:  # noqa: BLE001
-            print("! 读配置失败：%s" % exc)
+            print(t("services.cli.configReadFailed", error=exc))
 
 
 def load_house():
@@ -69,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(403)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
-        self.wfile.write(json.dumps({"error": "口令不对"}, ensure_ascii=False).encode("utf-8"))
+        self.wfile.write(json.dumps({"error": t("services.api.invalidToken", locale=language_from_header(self.headers.get("Accept-Language")))}, ensure_ascii=False).encode("utf-8"))
 
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -81,6 +84,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if send_browser_asset(self, parsed.path):
+            return
         # 数据接口挂门禁；静态壳文件公开（浏览器加载资源时带不上口令）
         if parsed.path == "/api/house":
             if not self._authed():
@@ -124,11 +129,11 @@ def main():
         CONFIG["gate_token"] = args.token
     if not CONFIG["gate_token"]:
         CONFIG["gate_token"] = secrets.token_urlsafe(12)
-        print("开发模式：本次口令 t=%s" % CONFIG["gate_token"])
+        print(t("services.cli.developmentToken", token=CONFIG["gate_token"]))
 
     srv = ThreadingHTTPServer((args.host, port), Handler)
-    print("大平层已启动：http://%s:%d/?t=%s" % (args.host, port, CONFIG["gate_token"]))
-    print("布局：%s" % os.path.join(DATA, "plan.json"))
+    print(t("services.cli.started", service=t("services.house.title"), host=args.host, port=port, token=CONFIG["gate_token"]))
+    print(t("services.cli.housePath", path=os.path.join(DATA, "plan.json")))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

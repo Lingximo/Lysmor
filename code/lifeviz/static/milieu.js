@@ -1,20 +1,21 @@
 /* 体内环境：睡眠压力 / 体温 / 免疫 / 疼痛 四条动态曲线。 */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('milieu-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
   const SERIES = [
-    { key: 'adenosine', label: '睡眠压力', color: '#818cf8', norm: v => v },
-    { key: 'core_temp', label: '体温', color: '#fb923c', norm: v => (v - 36.0) / 3.0 },
-    { key: 'cytokines', label: '免疫反应', color: '#4ade80', norm: v => v },
-    { key: 'pain', label: '疼痛', color: '#fb7185', norm: v => v },
-    { key: 'estrogen', label: '雌激素', color: '#f9a8d4', norm: v => v },
-    { key: 'progesterone', label: '孕激素', color: '#c4b5fd', norm: v => v },
+    { key: 'adenosine', get label() { return tr("panels.sleep_pressure"); }, color: '#818cf8', norm: v => v },
+    { key: 'core_temp', get label() { return tr("panels.temperature"); }, color: '#fb923c', norm: v => (v - 36.0) / 3.0 },
+    { key: 'cytokines', get label() { return tr("panels.immune_response"); }, color: '#4ade80', norm: v => v },
+    { key: 'pain', get label() { return tr("panels.pain"); }, color: '#fb7185', norm: v => v },
+    { key: 'estrogen', get label() { return tr("panels.estrogen"); }, color: '#f9a8d4', norm: v => v },
+    { key: 'progesterone', get label() { return tr("panels.progesterone"); }, color: '#c4b5fd', norm: v => v },
     // 2026-11-09 淋巴系统：回流 / 组织液 / 触痛
-    { key: 'lymph_flow', label: '淋巴回流', color: '#38bdf8', norm: v => v },
-    { key: 'lymph_edema', label: '组织液', color: '#a78bfa', norm: v => v },
-    { key: 'lymph_tenderness', label: '淋巴触痛', color: '#f472b6', norm: v => v },
+    { key: 'lymph_flow', get label() { return tr("panels.lymph_flow"); }, color: '#38bdf8', norm: v => v },
+    { key: 'lymph_edema', get label() { return tr("panels.tissue_fluid"); }, color: '#a78bfa', norm: v => v },
+    { key: 'lymph_tenderness', get label() { return tr("panels.lymph_pain"); }, color: '#f472b6', norm: v => v },
   ];
   const MAX = 60;
   const hist = {};

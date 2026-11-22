@@ -1,4 +1,5 @@
 (function () {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const $ = (id) => document.getElementById(id);
 
   function pct(v) {
@@ -14,8 +15,8 @@
     panel.classList.toggle("sick-on", sick && !recovering);
     panel.classList.toggle("sick-recover", recovering);
 
-    $("sick-tag").textContent = s.sick_state || "—";
-    $("sick-state").textContent = !sick ? "健康" : (recovering ? "恢复中" : "生病中");
+    $("sick-tag").textContent = s.sick_state === "恢复中" ? tr("panels.recovering") : (s.sick_state || "—");
+    $("sick-state").textContent = !sick ? tr("panels.healthy") : (recovering ? tr("panels.recovering") : tr("panels.sick"));
     $("sick-cause").textContent = sick ? (s.sick_cause_label || "") : "";
 
     $("sick-temp").textContent = (Number(s.core_temp) || 0).toFixed(1) + "℃";
@@ -24,18 +25,18 @@
 
     const rec = Math.round((Number(s.sick_recovery) || 0) * 100);
     $("sick-bar").style.width = rec + "%";
-    $("sick-recovery").textContent = sick ? "恢复 " + rec + "%" : "";
+    $("sick-recovery").textContent = sick ? tr("panels.recovery_prefix") + rec + "%" : "";
 
     const list = $("sick-plan");
     list.innerHTML = "";
     const plan = Array.isArray(s.sick_plan) ? s.sick_plan : [];
     if (!sick) {
       const li = document.createElement("li");
-      li.textContent = "没有生病，正常吃饭睡觉就好。";
+      li.textContent = tr("panels.healthy_plan");
       list.appendChild(li);
     } else if (!plan.length) {
       const li = document.createElement("li");
-      li.textContent = "先休息、多喝水，观察一下。";
+      li.textContent = tr("panels.rest_plan");
       list.appendChild(li);
     } else {
       plan.forEach((text) => {
@@ -47,12 +48,12 @@
 
     const hint = $("sick-hint");
     if (!sick) {
-      hint.textContent = "发烧 / 疼痛 / 吃坏肚子都会在这里显示。";
+      hint.textContent = tr("panels.sick_hint");
     } else if (s.sick_treatment_label) {
-      hint.textContent = "正在" + s.sick_treatment_label +
-        "；治疗中恢复会明显加快，撑不住就去医院。";
+      hint.textContent = tr("panels.activity_prefix") + s.sick_treatment_label +
+        tr("panels.treatment_suffix");
     } else {
-      hint.textContent = "还没有开始治疗。可以说“吃药 / 喝热水 / 睡一觉 / 去医院”，她就会按这个养病。";
+      hint.textContent = tr("panels.no_treatment");
     }
   }
 

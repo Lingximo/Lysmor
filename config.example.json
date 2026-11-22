@@ -1,5 +1,6 @@
 {
   "_说明": "一键配置的主配置模板。跑 python configure.py 会生成 config.json（真值），config.json 已被 .gitignore 屏蔽。",
+  "language": "zh-CN",
   "data_dir": "D:\\你的数据目录",
   "user_dir": "C:\\你的用户",
   "gate_token": "你自己生成的一段随机口令",

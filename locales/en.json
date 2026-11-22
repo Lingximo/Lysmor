@@ -1,0 +1,8 @@
+{
+  "common.language": "Language",
+  "common.loading": "Loading…",
+  "common.error": "An error occurred: {message}",
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.confirm": "Confirm"
+}

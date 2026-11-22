@@ -22,7 +22,19 @@ import os
 import sqlite3
 import sys
 import tarfile
+import tempfile
 import time
+import shutil
+
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+else:
+    sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
 
 # ================= 部署时按需修改（三处） =================
 ROOT     = r"D:\你的数据目录"                 # 数据根目录
@@ -95,7 +107,7 @@ def local_complete_snapshot():
         snapshot_db(live, tmp)
         os.replace(tmp, final)
     except Exception as exc:  # noqa: BLE001
-        print("  ! 本地完整备份失败：%s" % str(exc)[:80])
+        print(t('nirvana.complete_local_backup_failed_s') % str(exc)[:80])
         return None
     for p in glob.glob(os.path.join(backup_dir, "memory_complete_*.db")):
         if os.path.abspath(p) == os.path.abspath(final):
@@ -108,7 +120,7 @@ def local_complete_snapshot():
                     os.remove(side)
         except OSError:
             pass
-    print("本地完整备份：%s" % os.path.basename(final))
+    print(t('nirvana.complete_local_backup_s') % os.path.basename(final))
     return final
 
 
@@ -206,7 +218,7 @@ def coverage_warnings():
             continue
         warned.append(name)
     if warned:
-        print("  ! 这些目录没进包：%s（新功能目录？请加进 SOURCES）" % ", ".join(warned))
+        print(t('nirvana.directories_not_included_s_add_new_feature') % ", ".join(warned))
     return warned
 
 
@@ -233,9 +245,9 @@ def prune_local_packs(keep=1):
             os.remove(p)
             removed += 1
         except Exception as exc:  # noqa: BLE001
-            print("  ! 旧包删不掉：%s (%s)" % (os.path.basename(p), str(exc)[:40]))
+            print(t('nirvana.cannot_remove_old_archive_s_s') % (os.path.basename(p), str(exc)[:40]))
     if removed:
-        print("本地清理：删掉 %d 个旧包" % removed)
+        print(t('nirvana.local_cleanup_removed_d_old_archives') % removed)
 
 
 def main():
@@ -245,6 +257,8 @@ def main():
     stamp = time.strftime("%Y%m%d_%H%M%S")
     name = "backup_%s.tar.gz" % stamp
     target = os.path.join(OUT, name)
+    descriptor, partial = tempfile.mkstemp(prefix=".backup-", suffix=".tmp", dir=OUT)
+    os.close(descriptor)
 
     items = collect()
     coverage_warnings()
@@ -254,56 +268,52 @@ def main():
         "created_ts": time.time(),
         "memory": db_stats(),
         "files": [],
-        "note": "包里可能含密钥与账号凭据：只放自己的私有云盘/U 盘，不要外传。",
+        "note": t('nirvana.the_archive_may_contain_keys_and_credentials'),
     }
-    print("收集到 %d 个文件，开始打包…" % len(items))
+    print(t('nirvana.collected_d_files_creating_archive') % len(items))
 
     total = 0
-    stage = os.path.join(ROOT, "backup", "staging")
-    os.makedirs(stage, exist_ok=True)
-    with tarfile.open(target, "w:gz", compresslevel=6) as tar:
-        for full, arc in items:
-            try:
-                size = os.path.getsize(full)
-            except OSError:
-                continue
-            total += size
-            if full.lower().endswith((".db", ".sqlite", ".sqlite3")):
-                snap = os.path.join(stage, arc.replace("/", "__"))
-                try:
-                    snapshot_db(full, snap)
-                    tar.add(snap, arcname=arc)
-                    manifest["files"].append({"path": arc, "size": os.path.getsize(snap),
-                                              "sha256": sha256(snap), "snapshot": True})
-                except Exception as exc:  # noqa: BLE001
-                    print("  ! 快照失败，退回原文件：%s (%s)" % (arc, str(exc)[:60]))
-                    tar.add(full, arcname=arc)
-                    manifest["files"].append({"path": arc, "size": size, "sha256": sha256(full)})
-                continue
-            tar.add(full, arcname=arc)
-            manifest["files"].append({"path": arc, "size": size, "sha256": sha256(full)})
-
-        for extra in ("README.md", "INSTALL.md", "requirements.txt"):
-            p = os.path.join(ROOT, "tools", extra)
-            if os.path.exists(p):
-                tar.add(p, arcname=extra)
-        raw = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
-        info = tarfile.TarInfo("manifest.json")
-        info.size = len(raw)
-        info.mtime = int(time.time())
-        tar.addfile(info, io.BytesIO(raw))
+    stage = tempfile.mkdtemp(prefix="backup-stage-", dir=os.path.join(ROOT, "backup"))
+    try:
+        with tarfile.open(partial, "w:gz", compresslevel=6) as tar:
+            for extra in ("README.md", "INSTALL.md", "requirements.txt"):
+                path = os.path.join(ROOT, "tools", extra)
+                if os.path.isfile(path):
+                    items.append((path, extra))
+            for index, (full, arc) in enumerate(items):
+                snap = os.path.join(stage, str(index))
+                database = full.lower().endswith((".db", ".sqlite", ".sqlite3"))
+                if database:
+                    try:
+                        snapshot_db(full, snap)
+                    except Exception as exc:  # noqa: BLE001
+                        raise RuntimeError(t('nirvana.database_snapshot_failed') % arc) from exc
+                else:
+                    shutil.copyfile(full, snap)
+                size = os.path.getsize(snap)
+                total += size
+                tar.add(snap, arcname=arc)
+                entry = {"path": arc, "size": size, "sha256": sha256(snap)}
+                if database:
+                    entry["snapshot"] = True
+                manifest["files"].append(entry)
+            raw = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
+            info = tarfile.TarInfo("manifest.json")
+            info.size = len(raw)
+            info.mtime = int(time.time())
+            tar.addfile(info, io.BytesIO(raw))
+        os.replace(partial, target)
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+        if os.path.exists(partial):
+            os.remove(partial)
 
     size = os.path.getsize(target)
-    try:
-        import shutil as _sh
-        _sh.rmtree(stage, ignore_errors=True)
-    except Exception:  # noqa: BLE001
-        pass
     local_complete_snapshot()
     final_sha = sha256(target)
-    print("完成：%s" % target)
-    print("原始 %.1f MB  →  压缩后 %.1f MB  （%d 个文件）" % (total / 1e6, size / 1e6, len(items)))
-    print("记忆：%s" % json.dumps(manifest["memory"], ensure_ascii=False))
+    print(t('nirvana.completed_s') % target)
+    print(t('nirvana.original_f_mb_compressed_f_mb_d') % (total / 1e6, size / 1e6, len(items)))
+    print(t('nirvana.memories_s') % json.dumps(manifest["memory"], ensure_ascii=False))
     print("sha256：%s" % final_sha)
 
     with open(os.path.join(OUT, "latest.json"), "w", encoding="utf-8") as f:

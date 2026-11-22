@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TA · 简笔画</title>
+<title data-i18n="primary.doodle.title"></title>
 <style>
   :root{--bg:#070d18;--card:#0d1626;--line:rgba(130,170,255,.14);--txt:#dbe7f7;--dim:#7c8ea6;--acc:#6aa8ff}
   *{box-sizing:border-box}
@@ -34,21 +34,24 @@
 <body>
 <header>
   <i class="dot"></i>
-  <h1>TA · 简笔画</h1>
-  <span class="sub">陪玩时随手画的 · 铅笔草稿 / ComfyUI 上色</span>
-  <a href="/">回聊天</a>
+  <h1 data-i18n="primary.doodle.title"></h1>
+  <span class="sub" data-i18n="primary.doodle.subtitle"></span>
+  <a href="/" data-i18n="primary.doodle.back"></a>
+  <select data-language-select></select>
 </header>
 <main>
   <div id="stat" class="sub" style="color:#7c8ea6;margin-bottom:14px"></div>
   <div id="grid" class="grid"></div>
-  <div id="empty" class="empty" hidden>还没画过简笔画</div>
+  <div id="empty" class="empty" hidden data-i18n="primary.doodle.empty"></div>
 </main>
+<script src="/i18n.js"></script>
 <script>
+const t = window.LysmorI18n.t;
 async function load(){
   const r = await fetch('/api/doodles');
   const list = await r.json();
   const g = document.getElementById('grid');
-  document.getElementById('stat').textContent = list.length ? ('共 ' + list.length + ' 幅') : '';
+  document.getElementById('stat').textContent = list.length ? t('primary.art_count', {count: list.length}) : '';
   document.getElementById('empty').hidden = list.length > 0;
   g.innerHTML = '';
   for (const it of list){
@@ -60,7 +63,7 @@ async function load(){
       im.src = '/art/' + encodeURIComponent(it.doodle);
       im.onclick = () => window.open(im.src, '_blank');
       f.appendChild(im);
-      const c = document.createElement('figcaption'); c.textContent = '草稿';
+      const c = document.createElement('figcaption'); c.textContent = t('primary.doodle.draft');
       f.appendChild(c); pair.appendChild(f);
     }
     if (it.sketch){
@@ -69,7 +72,7 @@ async function load(){
       im.src = '/art/' + encodeURIComponent(it.sketch);
       im.onclick = () => window.open(im.src, '_blank');
       f.appendChild(im);
-      const c = document.createElement('figcaption'); c.textContent = '上色';
+      const c = document.createElement('figcaption'); c.textContent = t('primary.doodle.colored');
       f.appendChild(c); pair.appendChild(f);
     }
     card.appendChild(pair);
@@ -80,6 +83,7 @@ async function load(){
     g.appendChild(card);
   }
 }
+window.addEventListener('lysmor:languagechange', load);
 load();
 setInterval(load, 30000);
 </script>

@@ -25,6 +25,10 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, unquote
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset, language_from_header, t
+
 sys.path.insert(0, r"D:\你的数据目录\tools")
 import gate  # noqa: E402  共用访问口令
 
@@ -833,6 +837,9 @@ def _loop():
 
 # ---------------------------------------------------------------- HTTP
 class Handler(BaseHTTPRequestHandler):
+    def _message(self, key):
+        return t(key, locale=language_from_header(self.headers.get("Accept-Language")))
+
     server_version = "CompanionHouse/1.0"
 
     def log_message(self, fmt, *args):
@@ -914,7 +921,7 @@ class Handler(BaseHTTPRequestHandler):
                                              ensure_ascii=False))
             if path == "/api/house/tvframe":
                 if len(raw) < 1000:
-                    return self._send(400, '{"ok":false,"error":"frame too small"}')
+                    return self._send(400, json.dumps({"ok": False, "error": self._message("http.error.frame_small")}, ensure_ascii=False))
                 desc = HOUSE.tv_frame(raw)
                 return self._send(200, json.dumps(
                     {"ok": bool(desc), "desc": desc,
@@ -926,12 +933,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200 if ok else 400,
                                   json.dumps({"ok": ok, "house": HOUSE.snapshot()},
                                              ensure_ascii=False))
-            return self._send(404, '{"error":"not found"}')
+            return self._send(404, json.dumps({"error": self._message("http.error.not_found")}, ensure_ascii=False))
         except Exception as exc:  # noqa: BLE001
             return self._send(500, json.dumps({"ok": False, "error": str(exc)},
                                               ensure_ascii=False))
 
     def do_GET(self):
+        asset = browser_asset(urlparse(self.path).path)
+        if asset is not None:
+            body, mime = asset
+            return self._send(200, body, mime)
         if gate.guard(self):
             return
         path = urlparse(self.path).path
@@ -953,12 +964,12 @@ class Handler(BaseHTTPRequestHandler):
                 name = os.path.basename(unquote(path[len("/art/file/"):]))
                 full = os.path.normpath(os.path.join(ART_DIR, name))
                 if not full.startswith(os.path.normpath(ART_DIR) + os.sep) or not os.path.isfile(full):
-                    return self._send(404, '{"error":"no art"}')
+                    return self._send(404, json.dumps({"error": self._message("http.error.art_missing")}, ensure_ascii=False))
                 return self._file(full, self._ctype(full))
             if path.startswith("/bg/"):
                 name = os.path.basename(path)[:-4]
                 if name not in ("dawn", "morning", "noon", "afternoon", "evening", "night"):
-                    return self._send(404, '{"error":"no bg"}')
+                    return self._send(404, json.dumps({"error": self._message("http.error.background_missing")}, ensure_ascii=False))
                 return self._file(os.path.join(BG_DIR, name + ".jpg"), "image/jpeg")
             if path == "/3d":
                 return self._file(os.path.join(STATIC, "three.html"), "text/html; charset=utf-8")
@@ -967,13 +978,13 @@ class Handler(BaseHTTPRequestHandler):
                 root = os.path.normpath(STATIC)
                 full = os.path.normpath(os.path.join(root, rel))
                 if not (full == root or full.startswith(root + os.sep)):
-                    return self._send(403, '{"error":"forbidden"}')
+                    return self._send(403, json.dumps({"error": self._message("http.error.forbidden")}, ensure_ascii=False))
                 if not os.path.isfile(full):
-                    return self._send(404, '{"error":"not found"}')
+                    return self._send(404, json.dumps({"error": self._message("http.error.not_found")}, ensure_ascii=False))
                 return self._file(full, self._ctype(full))
             if path == "/favicon.ico":
                 return self._send(204, b"")
-            return self._send(404, '{"error":"not found"}')
+            return self._send(404, json.dumps({"error": self._message("http.error.not_found")}, ensure_ascii=False))
         except Exception as exc:  # noqa: BLE001
             return self._send(500, json.dumps({"error": str(exc)}))
 
@@ -1010,7 +1021,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(full, "rb") as f:
                 body = f.read()
         except OSError:
-            return self._send(404, '{"error":"not found"}')
+            return self._send(404, json.dumps({"error": self._message("http.error.not_found")}, ensure_ascii=False))
         return self._send(200, body, ctype,
                           extra={"ETag": etag} if etag else None,
                           cache=cache, gzip_ok=True)

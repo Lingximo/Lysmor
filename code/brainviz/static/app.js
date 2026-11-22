@@ -1,4 +1,5 @@
-﻿(() => {
+(() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('scene');
   const ctx = canvas.getContext('2d');
   const statusEl = document.getElementById('status');
@@ -7,13 +8,13 @@
   avatarImg.src = '/avatar.png';
 
   const TYPE = {
-    person: { label: '人物', color: '#67e8f9' },
-    fact: { label: '事实', color: '#fbbf24' },
-    topic: { label: '话题', color: '#a78bfa' },
-    memory: { label: '记忆', color: '#4dd0e1' },
-    skill: { label: '技能', color: '#34d399' },
-    place: { label: '地点', color: '#fb7185' },
-    object: { label: '物品', color: '#f472b6' },
+    person: { get label() { return tr("panels.person"); }, color: '#67e8f9' },
+    fact: { get label() { return tr("panels.fact"); }, color: '#fbbf24' },
+    topic: { get label() { return tr("panels.topic"); }, color: '#a78bfa' },
+    memory: { get label() { return tr("panels.memory"); }, color: '#4dd0e1' },
+    skill: { get label() { return tr("panels.skill"); }, color: '#34d399' },
+    place: { get label() { return tr("panels.place"); }, color: '#fb7185' },
+    object: { get label() { return tr("panels.object"); }, color: '#f472b6' },
   };
 
   // 2026-11-05：太空感渲染开关（?fx=classic 回退旧画法）
@@ -54,6 +55,7 @@
     memories: [],
     decaySel: null,
     decayHover: null,
+    connectionState: "connecting",
     chart: null,
   };
 
@@ -68,8 +70,13 @@
     association: '#94a3b8',
   };
 
+  function phaseName(value) {
+    const phases = {"刻在心里": "panels.etched", "记得清楚": "panels.clear", "还新鲜": "panels.fresh", "有点模糊": "panels.blurry", "快忘了": "panels.fading", "几乎想不起": "panels.almost_forgotten"};
+    return phases[value] ? tr(phases[value]) : value;
+  }
+
   function typeInfo(type) {
-    return TYPE[type] || { label: type || '其他', color: '#8fa8c9' };
+    return TYPE[type] || { label: type || tr("panels.other"), color: '#8fa8c9' };
   }
 
   function toast(message) {
@@ -105,7 +112,7 @@
   }
 
   async function load() {
-    statusEl.textContent = '连接中…';
+    statusEl.textContent = tr("panels.connecting");
     try {
       const [graph, stats, recent, decay] = await Promise.all([
         fetch('/api/graph').then(r => r.json()),
@@ -117,12 +124,14 @@
       renderStats(stats);
       renderRecent(recent.items || []);
       renderDecay(decay);
-      statusEl.textContent = '在线';
+      state.connectionState = 'online';
+      statusEl.textContent = tr("panels.online");
       statusEl.style.color = '#67e8f9';
     } catch (err) {
-      statusEl.textContent = '离线';
+      state.connectionState = 'offline';
+      statusEl.textContent = tr("panels.offline");
       statusEl.style.color = '#fb7185';
-      toast('加载失败：' + err.message);
+      toast(tr("panels.load_failed_prefix") + err.message);
     }
   }
 
@@ -133,7 +142,7 @@
         const s = Math.sin((i + 1) * 12.9898 + k * 78.233) * 43758.5453;
         return s - Math.floor(s);
       };
-      // 银河里每个点都是"记忆"：靠中心的是重要的/常被想起的
+      // 银河里每个点都是tr("panels.memory")：靠中心的是重要的/常被想起的
       const imp = Math.max(0, Math.min(1, Number(n.importance || n.r || 0.5)));
       const rr = Math.pow(rnd(1), 0.55) * (0.35 + 0.65 * (1 - imp));
       const orb = galaxyOrbit(rr, rnd(2));
@@ -163,7 +172,7 @@
     state.selected = null;
     state.searchIds.clear();
     renderLegend();
-    document.getElementById('detail').textContent = '点一颗星看看';
+    document.getElementById('detail').textContent = tr("panels.select_star");
   }
 
   function renderStats(stats) {
@@ -197,7 +206,7 @@
     const box = document.getElementById('recent');
     box.innerHTML = '';
     if (!items.length) {
-      box.textContent = '还没有长期记忆';
+      box.textContent = tr("panels.no_long_memory");
       return;
     }
     for (const item of items) {
@@ -225,7 +234,7 @@
     const box = document.getElementById('regions');
     box.innerHTML = '';
     if (!data.regions.length) {
-      box.textContent = '还没有记忆';
+      box.textContent = tr("panels.no_memory");
     }
     for (const r of data.regions) {
       const row = document.createElement('div');
@@ -237,7 +246,7 @@
          <span class="region-role">${escapeHtml(r.role)}</span>
          <span class="region-bar"><i style="width:${pct}%;background:${r.color}"></i></span>
          <span class="region-count">${r.count}</span>`;
-      row.title = r.hint + `\n平均清晰度 ${pct}%`;
+      row.title = r.hint + tr("panels.avg_clarity_tooltip", {percent: pct});
       box.appendChild(row);
     }
 
@@ -250,7 +259,7 @@
       if (!n) continue;
       const chip = document.createElement('span');
       chip.className = 'phase-chip';
-      chip.innerHTML = `${name}<b>${n}</b>`;
+      chip.innerHTML = `${phaseName(name)}<b>${n}</b>`;
       phases.appendChild(chip);
     }
 
@@ -264,13 +273,13 @@
     fading.innerHTML = '';
     const risky = data.items.filter(i => !i.protected).slice(0, 4);
     if (!risky.length) {
-      fading.innerHTML = '<div class="fading-empty">都记得挺牢，没有快忘掉的</div>';
+      fading.innerHTML = `<div class="fading-empty">${tr("panels.no_fading")}</div>`;
     }
     for (const item of risky) {
       const div = document.createElement('div');
       div.className = 'fading-item';
-      div.textContent = item.summary || '(无摘要)';
-      div.title = `清晰度 ${(item.clarity * 100).toFixed(1)}% · ${item.age_days} 天 · 想起过 ${item.accesses} 次`;
+      div.textContent = item.summary || tr("panels.no_summary");
+      div.title = tr("panels.memory_tooltip", {clarity: (item.clarity * 100).toFixed(1), days: item.age_days, count: item.accesses});
       div.onclick = () => {
         state.decaySel = item.id;
         drawDecay();
@@ -335,7 +344,7 @@
     c.fillStyle = 'rgba(127,147,184,0.75)';
     c.textAlign = 'center';
     for (const d of [0, Math.round(maxAge / 2), maxAge]) {
-      c.fillText(d + '天', X(d), g.y0 + g.ih + 12);
+      c.fillText(d + tr("panels.days_suffix"), X(d), g.y0 + g.ih + 12);
     }
 
     // 保护线 / 清退线
@@ -353,8 +362,8 @@
       c.textAlign = 'left';
       c.fillText(label, g.x0 + 2, Y(v) - 3);
     };
-    drawLine(0.7, 'rgba(52,211,153,0.5)', '保护线 0.70');
-    drawLine(0.45, 'rgba(251,113,133,0.5)', '清退线 0.45');
+    drawLine(0.7, 'rgba(52,211,153,0.5)', tr("panels.protection_line"));
+    drawLine(0.45, 'rgba(251,113,133,0.5)', tr("panels.retirement_line"));
 
     // 参考曲线
     const palette = ['#67e8f9', '#a78bfa', '#fb7185', '#34d399'];
@@ -1009,7 +1018,7 @@
         const tip = pts[Math.round(pts.length * 0.12)];
         if (tip) {
           ctx.fillStyle = 'rgba(127,147,184,0.5)';
-          ctx.fillText(days + ' 天', tip.x, tip.y - 4);
+          ctx.fillText(days + tr("panels.spaced_days_suffix"), tip.x, tip.y - 4);
         }
       }
 
@@ -1095,7 +1104,7 @@
   async function selectNode(n) {
     state.selected = n.id;
     const box = document.getElementById('detail');
-    box.innerHTML = '<span style="color:#7f93b8">读取中…</span>';
+    box.innerHTML = tr("panels.reading_html");
     try {
       const detail = await fetch('/api/node?id=' + encodeURIComponent(n.id)).then(r => r.json());
       const info = typeInfo(detail.type || n.type);
@@ -1104,10 +1113,10 @@
       ).join('');
       box.innerHTML = `<h3>${escapeHtml(detail.value || n.label)}</h3>
         <span class="tag" style="color:${info.color}">${escapeHtml(info.label)}</span>
-        <span class="tag">${detail.neighbors ? detail.neighbors.length : 0} 条关系</span>
-        ${neighbors || '<div style="color:#7f93b8;font-size:11px">没有相邻节点</div>'}`;
+        <span class="tag">${tr("panels.relationship_count", {count: detail.neighbors ? detail.neighbors.length : 0})}</span>
+        ${neighbors || tr("panels.no_neighbors_html")}`;
     } catch (err) {
-      box.textContent = '读取失败：' + err.message;
+      box.textContent = tr("panels.read_failed_prefix") + err.message;
     }
   }
 
@@ -1115,7 +1124,7 @@
     state.rotX = -0.30;
     state.rotY = 0.2;
     state.zoom = 1;
-    toast('视角已重置');
+    toast(tr("panels.view_reset"));
   }
 
   canvas.addEventListener('mousedown', e => {
@@ -1177,14 +1186,14 @@
     e.currentTarget.classList.toggle('active', state.auto);
   };
   document.getElementById('reset-btn').onclick = resetView;
-  document.getElementById('refresh-btn').onclick = () => { load(); toast('已刷新'); };
+  document.getElementById('refresh-btn').onclick = () => { load(); toast(tr("panels.refreshed")); };
 
   // L 键：银河模式下切换"关系连线"（默认关着，参考图里没有网格）
   window.addEventListener('keydown', e => {
     if (e.target && /input|textarea/i.test(e.target.tagName)) return;
     if (e.key === 'l' || e.key === 'L') {
       state.showLinks = !state.showLinks;
-      toast(state.showLinks ? '显示关系连线' : '只看星海');
+      toast(state.showLinks ? tr("panels.show_links") : tr("panels.stars_only"));
     }
   });
 
@@ -1205,7 +1214,7 @@
         results.innerHTML = '';
         state.searchIds = new Set((data.items || []).map(x => x.id));
         if (!data.items || !data.items.length) {
-          results.innerHTML = '<div class="search-item"><b>没有搜到</b><span>换个词试试</span></div>';
+          results.innerHTML = tr("panels.search_empty_html");
         } else {
           for (const item of data.items) {
             const div = document.createElement('div');
@@ -1222,7 +1231,7 @@
         }
         results.classList.add('show');
       } catch (err) {
-        results.innerHTML = '<div class="search-item"><b>搜索失败</b><span>' + escapeHtml(err.message) + '</span></div>';
+        results.innerHTML = tr("panels.search_failed_html") + escapeHtml(err.message) + '</span></div>';
         results.classList.add('show');
       }
     }, 220);
@@ -1236,7 +1245,7 @@
   document.getElementById('search-btn').onclick = () => {
     const first = results.querySelector('.search-item');
     if (first) first.click();
-    else toast('先输入关键词');
+    else toast(tr("panels.enter_keyword"));
   };
   document.addEventListener('click', e => {
     if (!e.target.closest('.search-wrap')) results.classList.remove('show');
@@ -1253,15 +1262,15 @@
       decayCanvas.style.cursor = hit ? 'pointer' : 'default';
       if (hit) {
         note.innerHTML =
-          `清晰度 <b style="color:#9fd3ff">${(hit.clarity * 100).toFixed(1)}%</b>`
-          + ` · ${hit.age_days} 天前 · 想起 ${hit.accesses} 次 · ${hit.phase}<br>`
+          `${tr("panels.clarity")} <b style="color:#9fd3ff">${(hit.clarity * 100).toFixed(1)}%</b>`
+          + ` · ${tr("panels.recalled_summary", {days: hit.age_days, count: hit.accesses})} · ${phaseName(hit.phase)}<br>`
           + escapeHtml(hit.summary);
       } else {
-        note.textContent = '点图上的点，看是哪条记忆';
+        note.textContent = tr("panels.memory_point_hint");
       }
     });
     decayCanvas.addEventListener('mouseleave', () => {
-      note.textContent = '点图上的点，看是哪条记忆';
+      note.textContent = tr("panels.memory_point_hint");
     });
     decayCanvas.addEventListener('click', e => {
       const hit = chartPointAt(e);
@@ -1274,6 +1283,7 @@
     window.addEventListener('resize', () => drawDecay());
   }
 
+  window.addEventListener("lysmor:languagechange", () => { renderLegend(); statusEl.textContent = tr("panels." + state.connectionState); if (state.decay) renderDecay(state.decay); });
   load();
   requestAnimationFrame(draw);
 })();
