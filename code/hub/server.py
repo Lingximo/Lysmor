@@ -19,10 +19,15 @@ import json
 import os
 import secrets
 import sqlite3
+import sys
 import time
 
 import aiohttp
 from aiohttp import web
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset, language_from_header, t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
@@ -72,26 +77,31 @@ def read_text(path: str) -> str:
 
 
 def _local(request: web.Request) -> bool:
-    host = (request.host or "").split(":")[0]
-    return host in ("127.0.0.1", "localhost", "::1")
+    return request.remote in ("127.0.0.1", "::1")
 
 
 def allowed(request: web.Request) -> bool:
     if _local(request):
         return True
     token = request.query.get("t") or request.cookies.get(COOKIE) or request.headers.get("X-Hub")
-    return token == KEY
+    return bool(token) and secrets.compare_digest(token.encode(), KEY.encode())
 
 
 async def gate_middleware(app, handler):
     async def wrapper(request):
         if request.path.startswith("/static/") or request.path in (
-                "/manifest.webmanifest", "/sw.js", "/icon.png", "/api/ping"):
+                "/manifest.webmanifest", "/sw.js", "/icon.png", "/api/ping",
+                "/i18n.js", "/locales/zh-CN.json", "/locales/zh-TW.json", "/locales/en.json"):
             return await handler(request)
         if not allowed(request):
-            return web.Response(status=403, text="口令不对。用带 ?t= 的地址打开。",
+            return web.Response(status=403, text=t("http.auth.invalid", locale=language_from_header(request.headers.get("Accept-Language"))),
                                 content_type="text/plain")
-        return await handler(request)
+        response = await handler(request)
+        given = request.query.get("t") or ""
+        if given and secrets.compare_digest(given.encode(), KEY.encode()):
+            response.set_cookie(COOKIE, KEY, max_age=31536000,
+                                httponly=True, samesite="Lax", secure=request.secure)
+        return response
     return wrapper
 
 
@@ -312,13 +322,12 @@ async def artimg(request):
 
 
 async def manifest_dynamic(request):
-    """PWA 清单：start_url 带口令，装成应用后一打开就是能用的页面。"""
-    tok = read_text(VIDEO_GATE)
+    """PWA 复用已授权的 cookie，不向公开清单写入访问口令。"""
     data = {
         "name": "TA",
         "short_name": "TA",
         "description": "TA的家：聊天 / 视频通话 / 状态 / 画廊 / 控制台",
-        "start_url": "/?t=" + tok,
+        "start_url": "/",
         "scope": "/",
         "display": "standalone",
         "orientation": "any",
@@ -354,6 +363,14 @@ async def static_file(request):
              ".webmanifest": "application/manifest+json"}.get(ext, "application/octet-stream")
     with open(full, "rb") as f:
         return web.Response(body=f.read(), headers={"Content-Type": ctype})
+
+
+async def i18n_asset(request):
+    asset = browser_asset(request.path)
+    if asset is None:
+        raise web.HTTPNotFound()
+    body, mime = asset
+    return web.Response(body=body, headers={"Content-Type": mime, "Cache-Control": "no-cache"})
 
 
 # ---------------- 她 · 此刻（生命+脑内整合页）的只读代理 ----------------
@@ -498,6 +515,8 @@ def build_app():
     app.router.add_get("/sw.js", static_file)
     app.router.add_get("/icon.png", static_file)
     app.router.add_get("/static/{name}", static_file)
+    app.router.add_get("/i18n.js", i18n_asset)
+    app.router.add_get("/locales/{name}", i18n_asset)
     return app
 
 

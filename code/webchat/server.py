@@ -39,10 +39,15 @@ import time
 
 import mimetypes
 import re
+import secrets
 import uuid
 import requests
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset, language_from_header, t
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
@@ -183,8 +188,9 @@ class Handler(BaseHTTPRequestHandler):
         # 2026-11-06：先把开头的 / 去掉，否则 join 会把它当成绝对路径（manifest/icon 404 就是这来的）
         name = str(name or "").lstrip("\\/")
         path = os.path.normpath(name)
-        full = os.path.join(STATIC, path)
-        if not os.path.abspath(full).startswith(os.path.abspath(STATIC)) or not os.path.isfile(full):
+        root = os.path.realpath(STATIC)
+        full = os.path.realpath(os.path.join(root, path))
+        if not full.startswith(root + os.sep) or not os.path.isfile(full):
             return self._raw(b"not found", "text/plain; charset=utf-8", 404)
         ext = os.path.splitext(full)[1].lower()
         ctype = {".html": "text/html; charset=utf-8",
@@ -196,9 +202,44 @@ class Handler(BaseHTTPRequestHandler):
             self._raw(f.read(), ctype)
 
     # ---------------------------------------------------------------- routes
+    def _message(self, key, **variables):
+        return t(key, locale=language_from_header(self.headers.get("Accept-Language")), **variables)
+
+    def _authorized(self):
+        want = gate_token()
+        if not want:
+            return True
+        have = (parse_qs(urlparse(self.path).query).get("t") or [""])[0] or self.headers.get("X-Gate", "")
+        if have and secrets.compare_digest(have.encode(), want.encode()):
+            return True
+        self.close_connection = True
+        self._raw(json.dumps({"ok": False, "error": self._message("http.auth.invalid")}).encode(), "application/json; charset=utf-8", 403)
+        return False
+
+    def _json_body(self):
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length < 0 or length > 8 * 1024 * 1024:
+                self.close_connection = True
+                self._raw(b'{"ok":false}', "application/json", 413 if length > 0 else 400)
+                return None
+            body = json.loads(self.rfile.read(length) or b"{}")
+            if not isinstance(body, dict):
+                raise ValueError("expected an object")
+            return body
+        except (ValueError, UnicodeDecodeError):
+            self.close_connection = True
+            self._raw(b'{"ok":false}', "application/json", 400)
+            return None
+
     def do_GET(self):  # noqa: N802
         self._access()
         u = urlparse(self.path)
+        asset = browser_asset(u.path)
+        if asset is not None:
+            return self._raw(*asset)
+        if (u.path.startswith(("/api/", "/p/", "/img/", "/art/")) or u.path == "/avatar.png") and not self._authorized():
+            return
         if u.path == "/avatar.png":
             if os.path.isfile(AVATAR):
                 with open(AVATAR, "rb") as f:
@@ -222,7 +263,10 @@ class Handler(BaseHTTPRequestHandler):
                              "application/json; charset=utf-8")
         if u.path == "/api/push":
             q = parse_qs(u.query)
-            since = int((q.get("since") or ["0"])[0] or 0)
+            try:
+                since = int((q.get("since") or ["0"])[0] or 0)
+            except ValueError:
+                return self._raw(b'{"ok":false}', "application/json", 400)
             items = self._push_read(since)
             last = items[-1]["seq"] if items else since
             return self._raw(json.dumps({"items": items, "last": last}, ensure_ascii=False).encode("utf-8"),
@@ -300,7 +344,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             r = requests.get("http://127.0.0.1:%s%s" % (port, rest), timeout=30)
         except Exception:
-            return self._raw(b"upstream error", "text/plain; charset=utf-8", 502)
+            return self._raw(self._message("http.error.upstream").encode(), "text/plain; charset=utf-8", 502)
         data = r.content
         ctype = r.headers.get("Content-Type") or "application/octet-stream"
         if any(k in ctype for k in ("text/html", "text/css", "javascript", "application/json")):
@@ -333,32 +377,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802
         self._access()
+        if not self._authorized():
+            return
         if urlparse(self.path).path == "/api/push":
-            try:
-                n = int(self.headers.get("Content-Length") or 0)
-                payload = json.loads(self.rfile.read(n).decode("utf-8") or "{}")
-            except Exception:
-                payload = {}
-            seq = self._push_append(payload.get("text"))
+            payload = self._json_body()
+            if payload is None:
+                return
+            seq = self._push_append(str(payload.get("text") or ""))
             return self._raw(json.dumps({"ok": bool(seq), "seq": seq}).encode(),
                              "application/json; charset=utf-8")
         if not urlparse(self.path).path == "/api/send":
             return self._raw(b"not found", "text/plain; charset=utf-8", 404)
 
-        # 口令：?t=... 或 X-Gate 头
-        want = gate_token()
-        if want:
-            have = (parse_qs(urlparse(self.path).query).get("t") or [""])[0] or \
-                   self.headers.get("X-Gate", "")
-            if have != want:
-                return self._raw(json.dumps({"ok": False, "error": "bad token"}).encode(),
-                                 "application/json; charset=utf-8", 403)
-
-        length = int(self.headers.get("Content-Length") or 0)
-        try:
-            body = json.loads(self.rfile.read(length) or b"{}")
-        except ValueError:
-            return self._raw(b'{"ok":false}', "application/json", 400)
+        body = self._json_body()
+        if body is None:
+            return
         text = str(body.get("text") or "").strip()
         img_b64 = str(body.get("image_b64") or "").strip()
         if not text and not img_b64:
@@ -413,9 +446,9 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 raw = base64.b64decode(img_b64.split(",")[-1], validate=False)
             except Exception:
-                return self._raw(b'{"ok":false,"error":"image decode"}', "application/json", 400)
+                return self._raw(json.dumps({"ok": False, "error": self._message("http.error.image_decode")}).encode(), "application/json", 400)
             if len(raw) > 12 * 1024 * 1024:
-                return self._raw(b'{"ok":false,"error":"image too large"}', "application/json", 400)
+                return self._raw(json.dumps({"ok": False, "error": self._message("http.error.image_large")}).encode(), "application/json", 400)
             head = raw[:12]
             ext = ".png" if head[:8] == b"\x89PNG\r\n\x1a\n" else (".gif" if head[:6] in (b"GIF87a", b"GIF89a") else ".jpg")
             os.makedirs(UPLOADS, exist_ok=True)
@@ -438,7 +471,7 @@ class Handler(BaseHTTPRequestHandler):
                                        "Content-Type": "application/json"},
                               json=payload, timeout=120, stream=True)
         except Exception as exc:  # noqa: BLE001
-            return self._raw(json.dumps({"ok": False, "error": "AstrBot 连不上：%s" % exc},
+            return self._raw(json.dumps({"ok": False, "error": self._message("http.error.astrbot", detail=exc)},
                                         ensure_ascii=False).encode(),
                              "application/json; charset=utf-8", 502)
 
@@ -487,7 +520,7 @@ class Handler(BaseHTTPRequestHandler):
                     push(json.dumps({"error": str(ev.get("data"))}, ensure_ascii=False).encode() + b"\n")
         except Exception as exc:  # noqa: BLE001
             try:
-                push(json.dumps({"error": "stream broken: %s" % exc}, ensure_ascii=False).encode() + b"\n")
+                push(json.dumps({"error": self._message("http.error.stream", detail=exc)}, ensure_ascii=False).encode() + b"\n")
             except Exception:  # noqa: BLE001
                 pass
         finally:

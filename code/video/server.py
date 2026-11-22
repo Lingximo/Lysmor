@@ -4,6 +4,7 @@ import io
 import json
 import os
 import sys
+from html import escape
 sys.path.insert(0, r"D:\你的数据目录\video")
 try:
     import pending_store
@@ -19,6 +20,10 @@ import tempfile
 import threading
 import time
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset, language_from_header, locale_context, t
 
 # 2026-11-10：Windows 控制台默认 GBK，任何一句带颜文字/特殊符号的 print
 # 都会抛 UnicodeEncodeError，把陪玩循环整条打断。统一强制 UTF-8。
@@ -333,7 +338,7 @@ async def api_presence(request):
     try:
         raw = await request.read()
         if not raw:
-            return web.json_response({"ok": False, "error": "empty"}, status=400)
+            return web.json_response({"ok": False, "error": t("http.error.empty")}, status=400)
         faces, who = await asyncio.get_running_loop().run_in_executor(
             None, _detect_faces_blocking, raw)
         r = await presence_tick(faces)
@@ -503,7 +508,7 @@ def _build_pico_profile(paths):
 
 async def _enroll_capture(ws, data: bytes):
     if len(data) < 1000 or not data.startswith(b"RIFF"):
-        await ws.send_json({"type": "error", "message": "这段音频不对，重来"})
+        await ws.send_json({"type": "error", "message": t("http.error.audio_invalid")})
         return
     idx = len(VOICE_ENROLL["paths"])
     path = os.path.join(VOICE_ENROLL["dir"], "seg_%02d.wav" % (idx + 1))
@@ -531,9 +536,9 @@ async def _enroll_capture(ws, data: bytes):
 
 async def api_voice_enroll_start(request):
     if VOICE_ENROLL["active"]:
-        return web.json_response({"error": "已经在采集"}, status=409)
+        return web.json_response({"error": t("http.error.collecting")}, status=409)
     if not PICO_CLIENTS:
-        return web.json_response({"error": "PICO 没连上"}, status=503)
+        return web.json_response({"error": t("http.error.pico_disconnected")}, status=503)
     total = 6
     try:
         total = max(1, min(10, int(request.query.get("count", "6"))))
@@ -1786,16 +1791,6 @@ def _lifeviz():
 # 规则和记忆大脑那边一致：本机免口令，其他设备必须带 ?t= 或已种下 cookie。
 GATE_TOKEN_PATH = r"D:\你的数据目录\gate_token.txt"
 GATE_COOKIE = "companion_gate"
-GATE_DENY_HTML = (
-    "<!doctype html><meta charset='utf-8'>"
-    "<body style='font-family:sans-serif;background:#0f1720;color:#e8f1f8;"
-    "padding:60px;text-align:center'>"
-    "<h2>需要访问口令</h2><p style='color:#8fa6b8'>这些页面只给你的电脑和手机看。<br>"
-    "在电脑上打开 <code>D:\\你的数据目录\\gate_token.txt</code> 拿到口令，"
-    "地址后面加 <code>?t=口令</code> 访问一次即可。</p>"
-)
-
-
 def _gate_token():
     try:
         with open(GATE_TOKEN_PATH, encoding="utf-8-sig") as f:
@@ -1806,6 +1801,13 @@ def _gate_token():
 
 @web.middleware
 async def gate_middleware(request, handler):
+    with locale_context(language_from_header(request.headers.get("Accept-Language"))):
+        return await _gate_request(request, handler)
+
+
+async def _gate_request(request, handler):
+    if request.path in ("/i18n.js", "/locales/zh-CN.json", "/locales/zh-TW.json", "/locales/en.json"):
+        return await handler(request)
     peer = request.remote or ""
     if peer in ("127.0.0.1", "::1"):
         return await handler(request)
@@ -1814,8 +1816,8 @@ async def gate_middleware(request, handler):
         return await handler(request)
     given = request.query.get("t", "")
     cookie = request.cookies.get(GATE_COOKIE, "")
-    if (given and secrets.compare_digest(given, token)) or (
-        cookie and secrets.compare_digest(cookie, token)
+    if (given and secrets.compare_digest(given.encode(), token.encode())) or (
+        cookie and secrets.compare_digest(cookie.encode(), token.encode())
     ):
         response = await handler(request)
         if given and not cookie:
@@ -1823,8 +1825,15 @@ async def gate_middleware(request, handler):
                                 httponly=True, samesite="Lax")
         return response
     if request.path.startswith("/api/") or request.path == "/ws":
-        return web.json_response({"error": "needs token"}, status=401)
-    return web.Response(text=GATE_DENY_HTML, content_type="text/html", status=403)
+        return web.json_response({"error": t("http.auth.required")}, status=401)
+    deny_html = (
+        "<!doctype html><meta charset='utf-8'>"
+        "<body style='font-family:sans-serif;background:#0f1720;color:#e8f1f8;"
+        "padding:60px;text-align:center'><h2>" + escape(t("http.auth.required")) + "</h2><p>"
+        + escape(t("http.auth.private")) + "<br>"
+        + escape(t("http.auth.instructions", path=GATE_TOKEN_PATH)) + "</p>"
+    )
+    return web.Response(text=deny_html, content_type="text/html", status=403)
 
 
 def body_context():
@@ -2981,7 +2990,7 @@ async def api_companion_toggle(request):
         await _screen_watch(False)
         print("[陪玩] 桌宠壳没连上：不启动旧 Live2D 小人，开关回滚", flush=True)
         return web.json_response({"ok": False, "on": False, "mode": "none",
-                                  "error": "桌宠壳没连上：先打开TA App", "screen": screen})
+                                  "error": t("http.error.pet_disconnected"), "screen": screen})
     try:
         state = await asyncio.to_thread(stop_overlay)
     except Exception as exc:  # noqa: BLE001
@@ -3176,7 +3185,7 @@ async def _ws_session(request):
                 print("[耗时] ASR %.2fs" % (time.time() - _t_asr), flush=True)
                 if not text:
                     await ws.send_json(
-                        {"type": "error", "message": "没听清，再说一次"}
+                        {"type": "error", "message": t("http.error.audio_unclear")}
                     )
                     await ws.send_json({"type": "status", "status": "idle"})
                     continue
@@ -3684,7 +3693,7 @@ async def api_her_notes_post(request):
         body = {}
     text = str(body.get("text") or "").strip()
     if not text:
-        return web.json_response({"ok": False, "error": "empty"}, status=400)
+        return web.json_response({"ok": False, "error": t("http.error.empty")}, status=400)
     tag = str(body.get("tag") or "manual")[:20]
     if tag not in ("diary", "playalong", "manual"):
         tag = "manual"
@@ -3743,12 +3752,21 @@ async def index(request):
 async def static_files(request):
     """静态文件也一律不缓存：改完刷新就生效。"""
     rel = request.match_info.get("tail", "")
-    path = os.path.normpath(os.path.join(STATIC, rel))
-    if not path.startswith(STATIC) or not os.path.isfile(path):
+    root = os.path.realpath(STATIC)
+    path = os.path.realpath(os.path.join(root, rel))
+    if not path.startswith(root + os.sep) or not os.path.isfile(path):
         raise web.HTTPNotFound()
     resp = web.FileResponse(path)
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
+
+
+async def i18n_asset(request):
+    asset = browser_asset(request.path)
+    if asset is None:
+        raise web.HTTPNotFound()
+    body, mime = asset
+    return web.Response(body=body, headers={"Content-Type": mime, "Cache-Control": "no-cache"})
 
 
 async def api_chat(request):
@@ -3757,7 +3775,7 @@ async def api_chat(request):
         body = await request.json()
         text = str(body.get("text") or "").strip()
         if not text:
-            return web.json_response({"error": "empty"}, status=400)
+            return web.json_response({"error": t("http.error.empty")}, status=400)
         fixed = await memory_fix_reply(text)
         reply = fixed if fixed is not None else await llm_reply(OVERLAY_HISTORY, text)
         audio = await tts_safe(reply)
@@ -3787,10 +3805,10 @@ async def api_voice(request):
     try:
         data = await request.read()
         if len(data) < 1000:
-            return web.json_response({"error": "音频太短"}, status=400)
+            return web.json_response({"error": t("http.error.audio_short")}, status=400)
         text = await transcribe_audio(data)
         if not text:
-            return web.json_response({"error": "没听清"}, status=400)
+            return web.json_response({"error": t("http.error.audio_unclear")}, status=400)
         reply = await llm_reply(OVERLAY_HISTORY, text)
         audio = await tts_safe(reply)
         OVERLAY_HISTORY.append({"role": "user", "content": text})
@@ -3972,7 +3990,7 @@ async def api_she_state(request):
         with open(r"D:\你的数据目录\state\she_state.json", encoding="utf-8") as f:
             return web.json_response(json.load(f))
     except Exception:  # noqa: BLE001
-        return web.json_response({"error": "she_state 未生成"}, status=404)
+        return web.json_response({"error": t("http.error.state_missing")}, status=404)
 
 
 async def api_mood(request):
@@ -4029,7 +4047,7 @@ async def cert_cer(request):
     """给 iPhone 下载的根证书（DER）。"""
     path = os.path.join(TLS_DIR, "ca.cer")
     if not os.path.exists(path):
-        return web.Response(status=404, text="没有证书")
+        return web.Response(status=404, text=t("http.error.certificate_missing"))
     with open(path, "rb") as f:
         data = f.read()
     return web.Response(
@@ -4043,7 +4061,7 @@ async def cert_mobileconfig(request):
     """给 iPhone 一键安装的描述文件。"""
     path = os.path.join(TLS_DIR, "ca.mobileconfig")
     if not os.path.exists(path):
-        return web.Response(status=404, text="没有描述文件")
+        return web.Response(status=404, text=t("http.error.profile_missing"))
     with open(path, "rb") as f:
         data = f.read()
     return web.Response(
@@ -4083,7 +4101,7 @@ async def api_pico_look(request):
     try:
         raw = await request.read()
         if len(raw) < 1200:
-            return web.json_response({"error": "画面太小"}, status=400)
+            return web.json_response({"error": t("http.error.frame_small")}, status=400)
         PICO_STAT["frames"] += 1
         try:
             frame_ts = float(request.headers.get("X-Frame-Ts") or time.time())
@@ -4193,7 +4211,7 @@ async def api_panel_frame(request):
 async def api_panel_frame_png(request):
     data = ALPHA_FRAME["data"]
     if not data:
-        return web.Response(status=503, text="no frame")
+        return web.Response(status=503, text=t("http.error.frame_missing"))
     return web.Response(body=data, content_type="image/png",
                         headers={"Cache-Control": "no-store"})
 
@@ -4217,7 +4235,7 @@ async def api_look(request):
     try:
         raw = await request.read()
         if len(raw) < 1200:
-            return web.json_response({"error": "画面太小"}, status=400)
+            return web.json_response({"error": t("http.error.frame_small")}, status=400)
         WEB_LAST_FRAME["data"] = raw
         WEB_LAST_FRAME["ts"] = time.time()
         if VISION_ACCURATE_LOCK:
@@ -4280,6 +4298,8 @@ def main():
     app.on_startup.append(_startup)
     app.on_cleanup.append(_cleanup)
     app.router.add_get("/static/{tail:.*}", static_files)
+    app.router.add_get("/i18n.js", i18n_asset)
+    app.router.add_get("/locales/{name}", i18n_asset)
     print(f"TA视频通话: http://{HOST}:{PORT}")
     if TLS_READY:
         print(f"TA视频通话(HTTPS): https://{HOST}:{SSL_PORT}")

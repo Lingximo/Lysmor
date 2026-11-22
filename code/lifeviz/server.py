@@ -5,6 +5,10 @@ import time
 from urllib.parse import parse_qs, urlparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import browser_asset
+
 sys.path.insert(0, r"D:\你的数据目录\tools")
 import gate  # noqa: E402  共用访问口令
 
@@ -460,9 +464,19 @@ class Handler(BaseHTTPRequestHandler):
         return
 
     def do_GET(self):
+        asset = browser_asset(urlparse(self.path).path)
+        if asset is not None:
+            body, mime = asset
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if gate.guard(self):
             return
-        if self.path == "/api/state":
+        path = urlparse(self.path).path
+        if path == "/api/state":
             body = json.dumps(state(), ensure_ascii=False).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -473,13 +487,14 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        path = urlparse(self.path).path
         name = "index.html" if path in ("/", "/index.html") else path.lstrip("/")
         if name.startswith("live2d/"):
-            full = os.path.join(LIVE2D, name[len("live2d/"):])
+            root = os.path.realpath(LIVE2D)
+            full = os.path.realpath(os.path.join(root, name[len("live2d/"):]))
         else:
-            full = os.path.join(STATIC, name)
-        if not os.path.isfile(full):
+            root = os.path.realpath(STATIC)
+            full = os.path.realpath(os.path.join(root, name))
+        if not full.startswith(root + os.sep) or not os.path.isfile(full):
             self.send_response(404)
             self.end_headers()
             return
