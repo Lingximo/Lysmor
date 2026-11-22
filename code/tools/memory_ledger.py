@@ -21,9 +21,16 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import sys
 import time
+from contextlib import contextmanager
+
+if os.name == 'nt':
+    import msvcrt
+else:
+    import fcntl
 
 # Windows 控制台默认 GBK，直接 print ✅/❌ 会抛 UnicodeEncodeError，
 # 把「校验通过」变成退出码 1（踩过：--verify 明明全过却报错）
@@ -63,7 +70,24 @@ def load_ledger():
         return json.load(f)
 
 
+@contextmanager
+def _ledger_write_lock():
+    """锁定不会被 replace 的旁文件；关闭句柄（含进程退出）即释放锁。"""
+    with open(LEDGER + '.lock', 'a+b') as lock_file:
+        if os.name == 'nt':
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        yield
+
+
+@_ledger_write_lock()
 def save_ledger(data):
+    _save_ledger_locked(data)
+
+
+def _save_ledger_locked(data):
     tmp = LEDGER + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -105,19 +129,24 @@ def supplement_rehashed(supp):
     return supp.get("rehashed") or {}
 
 
+@_ledger_write_lock()
 def cmd_init(force=False):
+    return _init_locked(force)
+
+
+def _init_locked(force=False):
     if os.path.exists(LEDGER) and not force:
         print("账本已存在。要重建请加 --force（会先备份旧的）")
         return 1
-    if os.path.exists(LEDGER):
-        os.replace(LEDGER, LEDGER + f".old-{int(time.time())}")
     docs = load_docs()
     data = {
         "created": time.time(),
         "updated": time.time(),
         "entries": {str(i): {"sha256": sha(t), "len": len(t)} for i, t in docs.items()},
     }
-    save_ledger(data)
+    if force and os.path.exists(LEDGER):
+        shutil.copy2(LEDGER, LEDGER + f".old-{time.time_ns()}")
+    _save_ledger_locked(data)
     print(f"账本已建立：{len(docs)} 条")
     return 0
 
@@ -167,6 +196,7 @@ def cmd_verify():
     return 1 if (missing or changed) else 0
 
 
+@_ledger_write_lock()
 def cmd_retire(doc_id, reason="", replaced_by=None, by="user"):
     """把一条记忆登记为「被合法改写」，连同原因一起留档。
 
@@ -201,13 +231,14 @@ def cmd_retire(doc_id, reason="", replaced_by=None, by="user"):
     }
     entries.pop(key, None)
     ledger["updated"] = time.time()
-    save_ledger(ledger)
+    _save_ledger_locked(ledger)
     print(f"已登记作废 id={doc_id}" + (f" → 由 {replaced_by} 接替" if replaced_by else ""))
     if reason:
         print(f"原因：{reason}")
     return 0
 
 
+@_ledger_write_lock()
 def retire_many(doc_ids, reason="", by="dedupe"):
     """批量把已删除的记忆登记为「合法去重/改写」，一次读写账本。
 
@@ -241,7 +272,7 @@ def retire_many(doc_ids, reason="", by="dedupe"):
         entries.pop(key, None)
         moved += 1
     ledger["updated"] = now
-    save_ledger(ledger)
+    _save_ledger_locked(ledger)
     return moved
 
 
@@ -264,10 +295,11 @@ def cmd_log(limit=10):
     return 0
 
 
+@_ledger_write_lock()
 def cmd_sync():
     ledger = load_ledger()
     if ledger is None:
-        return cmd_init()
+        return _init_locked()
     docs = load_docs()
     entries = ledger.setdefault("entries", {})
     retired = ledger.setdefault("retired", {})
@@ -282,7 +314,7 @@ def cmd_sync():
         entries[key] = {"sha256": sha(text), "len": len(text)}
         added += 1
     ledger["updated"] = time.time()
-    save_ledger(ledger)
+    _save_ledger_locked(ledger)
     print(f"已补 {added} 条新记忆进账本，共 {len(entries)} 条")
     return 0
 
