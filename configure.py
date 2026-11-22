@@ -257,6 +257,106 @@ def patch_astrbot_llm(cfg):
         return "写入 AstrBot 配置失败（%s）——请手动在管理面板填" % str(exc)[:80]
 
 
+# ---------------- 身份词 → 人格提示词（可选，用使用者自己的 API） ----------------
+# 身份词：只用来确认身份（她叫什么、怎么称呼、什么关系、底线），不是人格提示词。
+# 优化：用使用者自己的 API 把身份词扩写成一份完整的人格提示词（system prompt），
+#      写到 data_dir/video/config.json 的 persona 字段（视频服务唯一人设来源）。
+IDENTITY_META_PROMPT = (
+    "你是一个 AI 伴侣系统的「人设生成器」。使用者会给你一段【身份词】，"
+    "它只用于确认身份（她叫什么、你们是什么关系、怎么称呼），不是人格提示词。\n"
+    "请你依据这段身份词，写出一份完整、稳定、可长期使用的人格提示词（system prompt）。要求：\n"
+    "1. 只写「她是谁、和你的关系与称呼、说话风格与语气、情绪表达方式、行为边界与红线、2~3 句语气示例」；\n"
+    "2. 不编造具体经历、不写记忆内容、不写技术细节、不提任何系统/模型/插件；\n"
+    "3. 用第二人称「你」来写，语气自然；长度 800~2000 字；\n"
+    "4. 只输出人格提示词正文，不要标题、不要解释、不要代码块。"
+)
+
+
+def identity_path(cfg):
+    """人设文件：data_dir/video/config.json（视频服务 persona 的唯一来源）。"""
+    return os.path.join(str(cfg.get("data_dir") or DEFAULTS["data_dir"]), "video", "config.json")
+
+
+def load_identity(cfg):
+    """读回身份词与人格提示词（没有就返回空串）。"""
+    p = identity_path(cfg)
+    try:
+        with open(p, encoding="utf-8-sig") as f:
+            d = json.load(f)
+        return {"identity": str(d.get("identity_raw") or ""), "persona": str(d.get("persona") or "")}
+    except Exception:  # noqa: BLE001
+        return {"identity": "", "persona": ""}
+
+
+def save_identity(cfg, identity_raw, persona):
+    """把身份词（仅确认身份）和优化后的人格提示词写进 video/config.json。"""
+    p = identity_path(cfg)
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    try:
+        with open(p, encoding="utf-8-sig") as f:
+            d = json.load(f)
+    except Exception:  # noqa: BLE001
+        d = {}
+        try:
+            with open(os.path.join(CODE, "video", "config.example.json"), encoding="utf-8-sig") as f:
+                d = json.load(f)
+        except Exception:  # noqa: BLE001
+            d = {}
+    d["identity_raw"] = str(identity_raw or "")
+    d["persona"] = str(persona or "")
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, p)
+    # 根 config.json 也留一份，方便向导回显（真值以 video/config.json 为准）
+    try:
+        root = {}
+        if os.path.exists(CFG_PATH):
+            with open(CFG_PATH, encoding="utf-8-sig") as f:
+                root = json.load(f)
+        root["identity"] = str(identity_raw or "")
+        root["persona"] = str(persona or "")
+        with open(CFG_PATH, "w", encoding="utf-8") as f:
+            json.dump(root, f, ensure_ascii=False, indent=2)
+    except Exception:  # noqa: BLE001
+        pass
+    return p
+
+
+def optimize_identity(identity_raw, llm):
+    """用使用者自己的 API 把身份词扩写成完整人格提示词。返回提示词正文。"""
+    import urllib.request
+    identity_raw = str(identity_raw or "").strip()
+    if not identity_raw:
+        raise ValueError("身份词是空的，先写一段")
+    api_key = str((llm or {}).get("api_key") or "").strip()
+    if not api_key:
+        raise ValueError("还没有填 DeepSeek API Key（在「账号清单」里填，然后重试）")
+    base = str((llm or {}).get("base_url") or DEFAULTS["llm"]["base_url"]).rstrip("/")
+    model = str((llm or {}).get("model") or "deepseek-chat")
+    payload = {
+        "model": model,
+        "temperature": 0.7,
+        "messages": [
+            {"role": "system", "content": IDENTITY_META_PROMPT},
+            {"role": "user", "content": "身份词：\n" + identity_raw[:2000]},
+        ],
+    }
+    req = urllib.request.Request(
+        base + "/chat/completions",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + api_key},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    text = text.strip()
+    if not text:
+        raise RuntimeError("API 返回了空内容，换个模型或重试")
+    return text
+
+
 def apply_config(cfg):
     """重写 code/ 占位符，写 config.json 与口令文件。返回 (文件数, 替换处数)。"""
     if not os.path.isdir(CODE):

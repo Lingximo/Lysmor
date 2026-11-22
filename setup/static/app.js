@@ -358,7 +358,66 @@
     });
   });
 
+  // ---------- 身份词 / 人格提示词优化 ----------
+  function loadIdentity() {
+    fetch("/api/identity").then(function (r) { return r.json(); }).then(function (d) {
+      if (d.identity) { $("identity").value = d.identity; }
+      if (d.persona) { $("persona").value = d.persona; }
+    }).catch(function () {});
+  }
+
+  $("opt_identity").addEventListener("click", function () {
+    var btn = $("opt_identity");
+    var st = $("identity_st");
+    if (!$("identity").value.trim()) { st.textContent = "先写一段身份词"; return; }
+    btn.disabled = true;
+    btn.textContent = "优化中…（调用你的 API）";
+    st.textContent = "正在用你的 API 生成人格提示词…";
+    fetch("/api/optimize_identity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        identity: $("identity").value,
+        api_key: $("api_key").value,
+        base_url: $("base_url").value,
+        model: $("model").value
+      })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) {
+        $("persona").value = d.persona;
+        st.textContent = "✅ 已生成，可手动修改后再保存";
+      } else {
+        st.textContent = "❌ " + (d.error || "优化失败");
+      }
+    }).catch(function (e) {
+      st.textContent = "❌ 连不上配置服务：" + e.message;
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = "✨ 用我的 API 优化成提示词";
+    });
+  });
+
+  $("save_identity").addEventListener("click", function () {
+    var btn = $("save_identity");
+    var st = $("identity_st");
+    btn.disabled = true;
+    btn.textContent = "保存中…";
+    fetch("/api/save_identity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identity: $("identity").value, persona: $("persona").value })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      st.textContent = d.ok ? "✅ 已保存为她的身份（video/config.json）" : "❌ " + (d.error || "保存失败");
+    }).catch(function (e) {
+      st.textContent = "❌ 连不上配置服务：" + e.message;
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = "💾 保存为她的身份";
+    });
+  });
+
   buildEnroll();
   refreshDefaults();
+  loadIdentity();
   autoCheckOnOpen();
 })();

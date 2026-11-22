@@ -86,6 +86,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"url": "http://127.0.0.1:%d/?t=%s" % (hub, token)})
             except Exception:
                 return self._json({"url": None})
+        if parsed.path == "/api/identity":
+            try:
+                cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
+                try:
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                except Exception:  # noqa: BLE001
+                    pass
+                data = configure.load_identity(cfg)
+                return self._json({"ok": True, "identity": data["identity"], "persona": data["persona"]})
+            except Exception as exc:  # noqa: BLE001
+                return self._json({"ok": False, "error": str(exc)}, 400)
         rel = parsed.path.strip("/") or "index.html"
         if ".." in rel or rel.startswith("/"):
             self.send_response(404)
@@ -172,6 +183,28 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True, "files": files, "repl": repl,
                                    "config_path": configure.CFG_PATH,
                                    "token": cfg["gate_token"], "astrbot": astr})
+            except Exception as exc:  # noqa: BLE001
+                return self._json({"ok": False, "error": str(exc)}, 400)
+        if parsed.path == "/api/optimize_identity":
+            try:
+                raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                req = json.loads(raw.decode("utf-8"))
+                llm = {"api_key": req.get("api_key"), "base_url": req.get("base_url"), "model": req.get("model")}
+                text = configure.optimize_identity(req.get("identity"), llm)
+                return self._json({"ok": True, "persona": text})
+            except Exception as exc:  # noqa: BLE001
+                return self._json({"ok": False, "error": str(exc)}, 400)
+        if parsed.path == "/api/save_identity":
+            try:
+                raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                req = json.loads(raw.decode("utf-8"))
+                cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
+                try:
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                except Exception:  # noqa: BLE001
+                    pass
+                path = configure.save_identity(cfg, req.get("identity"), req.get("persona"))
+                return self._json({"ok": True, "path": path})
             except Exception as exc:  # noqa: BLE001
                 return self._json({"ok": False, "error": str(exc)}, 400)
         self.send_response(404)

@@ -29,6 +29,19 @@
         <p class="tiny">网盘/蒲公英/证书等可选账号见「⚙️ 详细设置」与 docs/登入清单.md。</p>
       </section>
 
+      <!-- 🧬 身份词 -->
+      <section class="card">
+        <h2>🧬 身份词（只用来确认身份，不是人格提示词）</h2>
+        <p class="tiny">写清楚：她叫什么、你们怎么称呼对方、你和她是什么关系、有哪些底线。只写「身份」，性格留空——下一步用你自己的 API 自动优化。</p>
+        <textarea id="identity" rows="4" placeholder="例：她叫小满，是住在电脑里的女孩；我叫她满满，她叫我爸爸；我们是家人，不是恋爱关系；不写真实人像、不做 NSFW。"></textarea>
+        <div class="btn-row">
+          <button id="opt_identity" class="check" type="button">✨ 用我的 API 优化成提示词</button>
+          <button id="save_identity" class="apply" type="button">💾 保存为她的身份</button>
+        </div>
+        <div id="identity_st" class="tiny"></div>
+        <textarea id="persona" rows="8" placeholder="优化后的人格提示词会出现在这里，可手动修改后再保存。"></textarea>
+      </section>
+
       <!-- B. 一键自动配置 -->
       <section class="card hero">
         <h2>⚡ 一键自动配置</h2>
