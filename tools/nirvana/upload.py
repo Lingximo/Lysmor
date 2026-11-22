@@ -20,6 +20,16 @@ import os
 import sys
 import time
 
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+else:
+    sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 # ================= 部署时按需修改 =================
 ROOT        = r"D:\你的数据目录"          # 数据根目录
 CLOUD_FOLDER = "companion-backup"         # 云端文件夹名
@@ -60,15 +70,15 @@ def sha256(path):
 #       for n in names: sdk.delete(n)
 
 def upload_one(path, name):
-    raise NotImplementedError("还没接网盘接口：请按本文件顶部说明实现 upload_one()")
+    raise NotImplementedError(t('nirvana.cloud_integration_missing_implement_upload_one_as'))
 
 
 def list_remote():
-    raise NotImplementedError("还没接网盘接口：请按本文件顶部说明实现 list_remote()")
+    raise NotImplementedError(t('nirvana.cloud_integration_missing_implement_list_remote_as'))
 
 
 def delete_remote(names):
-    raise NotImplementedError("还没接网盘接口：请按本文件顶部说明实现 delete_remote()")
+    raise NotImplementedError(t('nirvana.cloud_integration_missing_implement_delete_remote_as'))
 # ==========================================================
 
 
@@ -135,18 +145,18 @@ def prune(keep_stamp):
         names = [n for n in remote if any(n.startswith("backup_" + s) for s in drop)]
         try:
             delete_remote(names)
-            log("已清理旧套 %s（%d 个文件）" % (",".join(drop), len(names)))
+            log(t('nirvana.removed_old_sets_s_d_files') % (",".join(drop), len(names)))
         except Exception as exc:  # noqa: BLE001
-            log("清理旧套失败（不影响新套）：%s" % exc)
+            log(t('nirvana.old_set_cleanup_failed_new_set_unaffected') % exc)
     else:
-        log("网盘上共 %d 套，无需清理" % len(stamps))
+        log(t('nirvana.d_backup_sets_on_cloud_drive_no') % len(stamps))
 
 
 def main():
     if sys.stdout is not None:  # pythonw 下是 None
         sys.stdout.reconfigure(encoding="utf-8")
     if "--upload-only" not in sys.argv:
-        log("开始打包…")
+        log(t('nirvana.creating_archive'))
         import build
         build.main()
 
@@ -155,31 +165,31 @@ def main():
     src = latest["path"]
     stamp = latest["created"]
     if not os.path.exists(src):
-        log("找不到包：%s" % src)
+        log(t('nirvana.archive_not_found_s') % src)
         return 1
 
-    log("检查网盘接口是否已接入…")
+    log(t('nirvana.checking_cloud_drive_integration'))
     try:
         list_remote()
     except NotImplementedError as exc:
-        log("未接入网盘接口，本轮只做本地分片演示：%s" % exc)
-        log("本地分片与清单仍会生成，供你验证分片逻辑；接入接口后即可真正上传。")
+        log(t('nirvana.no_cloud_integration_demonstrating_local_splitting_only') % exc)
+        log(t('nirvana.local_parts_and_a_manifest_will_still'))
         dry = True
     except Exception as exc:  # noqa: BLE001
-        log("网盘接口调用失败：%s" % exc)
+        log(t('nirvana.cloud_drive_api_failed_s') % exc)
         return 1
     else:
         dry = False
 
     clean_stale_tmp()
-    log("切分 %s（%.1f MB，每片 16MB）" % (os.path.basename(src), os.path.getsize(src) / 1e6))
+    log(t('nirvana.splitting_s_f_mb_mb_per_part') % (os.path.basename(src), os.path.getsize(src) / 1e6))
     parts = split(src, stamp)
-    log("共 %d 片" % len(parts))
+    log(t('nirvana.d_parts') % len(parts))
 
     t0 = time.time()
     if not dry:
         for i, p in enumerate(parts, 1):
-            t = time.time()
+            part_started = time.time()
             last_err = None
             for attempt in (1, 2):          # 每片重试一次，失败留痕
                 try:
@@ -188,20 +198,20 @@ def main():
                     break
                 except Exception as exc:  # noqa: BLE001
                     last_err = exc
-                    log("  [%d/%d] 第 %d 次失败：%s" % (i, len(parts), attempt, exc))
+                    log(t('nirvana.d_d_attempt_d_failed_s') % (i, len(parts), attempt, exc))
                     time.sleep(3)
             if last_err is not None:
-                log("[FAIL] 分片 %s 两次都失败，本轮中止（旧套没动）" % p["name"])
+                log(t('nirvana.fail_part_s_failed_twice_stopping_old') % p["name"])
                 for q in parts:
                     try:
                         os.remove(q["path"])
                     except OSError:
                         pass
                 return 1
-            log("  [%d/%d] %s  %.1f MB  %.0f 秒" % (i, len(parts), p["name"],
-                                                   p["size"] / 1e6, time.time() - t))
+            log(t('nirvana.d_d_s_f_mb_f_seconds') % (i, len(parts), p["name"],
+                                                   p["size"] / 1e6, time.time() - part_started))
     else:
-        log("（dry 模式：跳过实际上传，仅本地生成分片与清单）")
+        log(t('nirvana.dry_mode_skip_upload_create_local_parts'))
 
     manifest = {
         "stamp": stamp,
@@ -215,7 +225,7 @@ def main():
     mpath = os.path.join(TMP, "backup_%s.json" % stamp)
     with open(mpath, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
-    log("清单已生成：%s" % os.path.basename(mpath))
+    log(t('nirvana.manifest_created_s') % os.path.basename(mpath))
 
     if not dry:
         try:
@@ -225,17 +235,17 @@ def main():
             remote = wait_visible(expected)
             bad = [n for n, s in expected.items() if remote.get(n) != s]
             if bad:
-                log("[FAIL] 远端大小对不上：%s（本轮不清理旧套）" % ", ".join(bad))
+                log(t('nirvana.fail_remote_size_mismatch_s_old_sets') % ", ".join(bad))
                 for p in parts:
                     try:
                         os.remove(p["path"])
                     except OSError:
                         pass
                 return 1
-            log("远端大小核对通过（%d 片 + 清单）" % len(parts))
+            log(t('nirvana.remote_sizes_verified_d_parts_manifest') % len(parts))
             prune(stamp)
         except Exception as exc:  # noqa: BLE001
-            log("[FAIL] 上传流程出错：%s" % exc)
+            log(t('nirvana.fail_upload_failed_s') % exc)
             return 1
 
     state = {"uploaded_at": time.time(), "stamp": stamp, "parts": len(parts),
@@ -252,10 +262,10 @@ def main():
     try:
         import kit
         kit.main()
-        log("应急包已刷新")
+        log(t('nirvana.emergency_kit_refreshed'))
     except Exception as exc:  # noqa: BLE001
-        log("应急包刷新失败（不影响云端包）：%s" % exc)
-    log("完成：%d 片，用时 %.1f 分钟" % (len(parts), (time.time() - t0) / 60))
+        log(t('nirvana.emergency_kit_refresh_failed_cloud_archive_unaffected') % exc)
+    log(t('nirvana.completed_d_parts_in_f_minutes') % (len(parts), (time.time() - t0) / 60))
     return 0
 
 

@@ -23,6 +23,16 @@ import sys
 import tarfile
 import time
 
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+else:
+    sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 # ================= 部署时按需修改（三处） =================
 ROOT     = r"D:\你的数据目录"                 # 数据根目录
 STARTUP  = r"C:\你的用户\CompanionStartup"     # 启动脚本目录
@@ -39,7 +49,8 @@ MOUNTS = {
     "scripts":     os.path.join(ROOT, "scripts"),
     "startup":     STARTUP,
     "plugins":     os.path.join(BOT_DATA, "plugins"),
-    "config/bot":  os.path.join(BOT_DATA, "config"),
+    "state/plugin_data": os.path.join(BOT_DATA, "plugin_data"),
+    "config/bot/config.json": os.path.join(BOT_DATA, "config.json"),
     "config/app":  os.path.join(ROOT, "config"),
 }
 
@@ -61,28 +72,42 @@ def read_manifest(tar_path):
 def verify(tar_path, manifest):
     bad = []
     with tarfile.open(tar_path, "r:gz") as tar:
+        members = tar.getmembers()
+        names = set()
+        for member in members:
+            if member.name in names:
+                bad.append((member.name, t('nirvana.duplicate_archive_path')))
+            names.add(member.name)
+        expected = {item["path"] for item in manifest["files"]}
+        if len(expected) != len(manifest["files"]):
+            bad.append(("manifest.json", t('nirvana.duplicate_manifest_path')))
+        # Older packs include these recovery instructions outside the manifest.
+        legacy_extras = {"manifest.json", "README.md", "INSTALL.md", "requirements.txt"}
+        for member in members:
+            if member.isfile() and member.name not in expected | legacy_extras:
+                bad.append((member.name, t('nirvana.unlisted_file')))
+            if not member.isfile() and not member.isdir():
+                bad.append((member.name, t('nirvana.unsupported_member')))
         for item in manifest["files"]:
             try:
                 f = tar.extractfile(item["path"])
                 if f is None:
-                    bad.append((item["path"], "缺失"))
+                    bad.append((item["path"], t('nirvana.missing_55403')))
                     continue
-                h = hashlib.sha256(f.read()).hexdigest()
+                with f:
+                    h = hashlib.file_digest(f, "sha256").hexdigest()
                 if h != item["sha256"]:
-                    bad.append((item["path"], "hash 不符"))
+                    bad.append((item["path"], t('nirvana.hash_mismatch')))
             except KeyError:
-                bad.append((item["path"], "包里没有"))
+                bad.append((item["path"], t('nirvana.not_in_archive')))
     return bad
 
 
 def extract(tar_path, dest):
     os.makedirs(dest, exist_ok=True)
     with tarfile.open(tar_path, "r:gz") as tar:
-        try:
-            tar.extractall(dest, filter="data")
-        except TypeError:          # Python < 3.12
-            tar.extractall(dest)
-    print("已解到：%s" % dest)
+        tar.extractall(dest, filter="data")
+    print(t('nirvana.extracted_to_s') % dest)
 
 
 def place(stage, live=False):
@@ -95,8 +120,9 @@ def place(stage, live=False):
         plan.append((src, target))
     stale_total = 0
     for src, target in plan:
+        arc = os.path.relpath(src, stage).replace(os.sep, "/")
         exists = os.path.exists(target)
-        tag = "覆盖" if exists else "新建"
+        tag = t('nirvana.overwrite') if exists else t('nirvana.create')
         stale = 0
         if exists and os.path.isdir(src) and os.path.isdir(target):
             keep = set()
@@ -110,29 +136,41 @@ def place(stage, live=False):
                     if os.path.normpath(os.path.join(rel, fn)) not in keep:
                         stale += 1
             stale_total += stale
-        extra = ("  <- 目标里另有 %d 个旧文件不会被删" % stale) if stale else ""
+        extra = (t('nirvana.d_extra_old_files_in_the_destination') % stale) if stale else ""
         print("  %-8s %s%s" % (tag, target, extra))
         if live:
             if os.path.isdir(src):
-                shutil.copytree(src, target, dirs_exist_ok=True)
+                if arc == "state":
+                    os.makedirs(target, exist_ok=True)
+                    for name in os.listdir(src):
+                        if name == "plugin_data":
+                            continue
+                        source = os.path.join(src, name)
+                        destination = os.path.join(target, name)
+                        if os.path.isdir(source):
+                            shutil.copytree(source, destination, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(source, destination)
+                else:
+                    shutil.copytree(src, target, dirs_exist_ok=True)
             else:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 shutil.copy2(src, target)
     if live and stale_total:
-        print("\n  注意：合并覆盖不会删目标里多出来的 %d 个旧文件。" % stale_total)
-        print("  想要和包完全一致，先把目标目录备份后清空，再 --live。")
+        print(t('nirvana.note_merging_preserves_d_extra_old_files') % stale_total)
+        print(t('nirvana.for_an_exact_restore_back_up_and'))
     return plan
 
 
 def memory_check(path):
     db = os.path.join(path, "memory", "memory.db")
     if not os.path.exists(db):
-        return "没找到记忆库"
+        return t('nirvana.memory_database_not_found')
     con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
     n = con.execute("select count(*) from documents").fetchone()[0]
     ok = con.execute("pragma integrity_check").fetchone()[0]
     con.close()
-    return "记忆 %d 条，完整性 %s" % (n, ok)
+    return t('nirvana.d_memories_integrity_s_226443') % (n, ok)
 
 
 def main():
@@ -141,8 +179,8 @@ def main():
     args = sys.argv[1:]
 
     if "--list" in args or "--cloud" in args:
-        print("云端下载需要先接网盘接口：见 upload.py 顶部说明。")
-        print("现在请用 U 盘/本地包：python restore.py --file <包路径> [--live]")
+        print(t('nirvana.cloud_downloads_require_a_cloud_drive_integration'))
+        print(t('nirvana.use_a_usb_local_archive_python_restore'))
         return 1
 
     tar_path = None
@@ -151,28 +189,28 @@ def main():
         tar_path = args[args.index("--file") + 1]
 
     if not tar_path or not os.path.exists(tar_path):
-        print("用法：restore.py --file <包路径> [--live | --auto]")
+        print(t('nirvana.restore_usage'))
         return 1
 
-    print("包：%s（%.1f MB）" % (tar_path, os.path.getsize(tar_path) / 1e6))
+    print(t('nirvana.archive_s_f_mb') % (tar_path, os.path.getsize(tar_path) / 1e6))
     manifest = read_manifest(tar_path)
-    print("打包时间：%s   记忆：%s" % (manifest.get("created_at"),
+    print(t('nirvana.created_s_memories_s') % (manifest.get("created_at"),
                                      json.dumps(manifest.get("memory"), ensure_ascii=False)))
 
-    print("正在逐个校验文件…")
+    print(t('nirvana.verifying_each_file'))
     bad = verify(tar_path, manifest)
     if bad:
-        print("[FAIL] 有 %d 个文件对不上，停止：" % len(bad))
+        print(t('nirvana.fail_d_files_do_not_match_stopping') % len(bad))
         for p, why in bad[:10]:
             print("   %s  %s" % (why, p))
         return 1
-    print("[OK] %d 个文件全部校验通过" % len(manifest["files"]))
+    print(t('nirvana.ok_all_d_files_verified') % len(manifest["files"]))
 
     if auto and not os.path.isdir(ROOT):
-        print("\n这台电脑上还没有数据，直接铺回原位")
+        print(t('nirvana.no_existing_data_on_this_machine_restoring'))
         args.append("--live")
     elif auto:
-        print("\n这台电脑上已有数据，--auto 不覆盖；要真覆盖请显式加 --live")
+        print(t('nirvana.existing_data_found_auto_will_not_overwrite'))
 
     live = "--live" in args
     stamp = time.strftime("%Y%m%d_%H%M%S")
@@ -181,18 +219,18 @@ def main():
     else:
         stage = os.path.join(os.path.expanduser("~"), "companion_restore_" + stamp)
     extract(tar_path, stage)
-    print("解包后：%s" % memory_check(stage))
+    print(t('nirvana.after_extraction_s') % memory_check(stage))
 
-    print("\n要放到这些位置：")
+    print(t('nirvana.restore_destinations'))
     place(stage, live=False)
     if live:
-        print("\n开始写入…")
+        print(t('nirvana.writing_files'))
         place(stage, live=True)
-        print("\n下一步：")
-        print("  1) 装依赖（见包里的 requirements.txt / 说明书）")
-        print("  2) 跑 check.py 看还缺什么")
+        print(t('nirvana.next_steps'))
+        print(t('nirvana.install_dependencies_see_requirements_txt_instructions_in'))
+        print(t('nirvana.run_check_py_to_identify_missing_items'))
     else:
-        print("\n（没加 --live，只是解到恢复目录，没动现有文件）")
+        print(t('nirvana.no_live_extracted_to_staging_only_existing'))
     return 0
 
 
