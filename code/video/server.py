@@ -1509,6 +1509,14 @@ async def recall_memory(query, limit=3, cap=800):
 
     语义检索任何一步失败都会返回空，自动退回原来的"最近+关键词+重要"策略。
     """
+    # shadow 埋点（学习式检索 Phase 0）：只记录，不改行为
+    try:
+        import sys as _sys
+        _sys.path.insert(0, r"D:\你的数据目录\tools")
+        import retrieval_shadow as _rs
+        _rs.log("video_recall_context", query=(query or ""), features=_rs.features(query), mood=_rs._mood())
+    except Exception:  # noqa: BLE001
+        pass
     try:
         _st = json.load(open(MOOD_STATE, encoding="utf-8"))
         _hints = []

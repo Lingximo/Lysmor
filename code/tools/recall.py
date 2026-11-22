@@ -130,7 +130,21 @@ def recent(limit=3, query=None):
 
 def context(limit=3, query=None, header=None):
     """拼成可直接塞进 system prompt 的段落；没有记忆时返回空串。"""
+    # shadow 埋点（学习式检索 Phase 0）：只记录，不改行为
+    try:
+        import sys as _sys
+        import os as _os
+        _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+        import retrieval_shadow as _rs
+        _rs.log("recall_context", query=(query or ""), features=_rs.features(query), mood=_rs._mood())
+    except Exception:  # noqa: BLE001
+        pass
     lines = recent(limit=limit, query=query)
+    try:
+        import retrieval_shadow as _rs
+        _rs.log("recall_result", query=(query or ""), returned=len(lines))
+    except Exception:  # noqa: BLE001
+        pass
     _maybe_nudge()
     # 钉子（点名锚+承诺+72h原话）：常驻注入，不占召回预算
     try:

@@ -1,5 +1,10 @@
 # 版本历史
 
+## v0.2.1
+
+- 新增「学习式检索 Phase 0」shadow 埋点（`code/tools/retrieval_shadow.py`）：在记忆召回决策点记录 query 特征 + 情绪身体状态 + 查回条数，只记不改，为后续「什么时候该查」的门控攒数据
+- 埋点挂到 `code/tools/recall.py`（空间 / 主动消息）与 `code/video/server.py`（视频通话召回）
+
 ## v0.2.0
 
 - 新增「🧬 身份词 + 一键优化提示词」：只写身份（称呼 / 关系 / 底线），用你自己的 API 把它优化成完整人格提示词，保存为她的身份（`data_dir/video/config.json` 的 persona）
