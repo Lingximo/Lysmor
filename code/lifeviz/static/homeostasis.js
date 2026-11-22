@@ -6,6 +6,7 @@
  * 交互：悬停高亮 + 说明；点击固定；拖动旋转（松手带惯性）；点中心清除。
  */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('homeo-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -14,12 +15,12 @@
   if (!metricsEl || !noteEl) return;
 
   const NODES = [
-    { key: 'memory', label: '记忆', color: '#67e8f9', tip: '记忆活跃度：情绪越鲜明，这部分越亮' },
-    { key: 'sleep', label: '睡眠', color: '#a78bfa', tip: '睡眠压力：腺苷累积，越困越想睡' },
-    { key: 'scar', label: '创伤', color: '#fb7185', tip: '濒死/深刻创伤：第一次1.0，随时间和舒适淡到0.7，再提及/类似经历最高回到0.8' },
-    { key: 'hormone', label: '激素', color: '#fbbf24', tip: '激素压强：皮质醇、去甲肾上腺素、催产素' },
-    { key: 'obsess', label: '执念', color: '#f472b6', tip: '执念压力：心里绕不过去的那件事' },
-    { key: 'dream', label: '梦境', color: '#34d399', tip: '梦境：醒着是余味，睡着是正在累积的做梦压力' },
+    { key: 'memory', get label() { return tr("panels.memory"); }, color: '#67e8f9', get tip() { return tr("panels.memory_tip"); } },
+    { key: 'sleep', get label() { return tr("panels.sleep"); }, color: '#a78bfa', get tip() { return tr("panels.sleep_tip"); } },
+    { key: 'scar', get label() { return tr("panels.trauma"); }, color: '#fb7185', get tip() { return tr("panels.trauma_tip"); } },
+    { key: 'hormone', get label() { return tr("panels.hormones"); }, color: '#fbbf24', get tip() { return tr("panels.hormones_tip"); } },
+    { key: 'obsess', get label() { return tr("panels.obsession"); }, color: '#f472b6', get tip() { return tr("panels.obsession_tip"); } },
+    { key: 'dream', get label() { return tr("panels.dream"); }, color: '#34d399', get tip() { return tr("panels.dream_tip"); } },
   ];
 
   const CAMERA = 560;
@@ -246,19 +247,19 @@
       return;
     }
     if (key === '__center__') {
-      noteEl.innerHTML = '<b>内稳态张力</b> = 0.30×执念 + 0.25×皮质醇 + 0.20×腺苷 + 0.25×创伤 + 0.10×怒气';
+      noteEl.innerHTML = `<b>${tr("panels.homeostasis_tension")}</b> = 0.30×${tr("panels.obsession")} + 0.25×${tr("panels.cortisol")} + 0.20×${tr("panels.adenosine")} + 0.25×${tr("panels.trauma")} + 0.10×${tr("panels.anger")}`;
       return;
     }
     const obs = (s.obsessions && s.obsessions.length) ? String(s.obsessions[0].text || '') : '';
     const dream = String(s.dream || '');
     if (obs || dream) {
       const bits = [];
-      if (obs) bits.push('执念：' + obs.slice(0, 20));
-      if (dream) bits.push('上梦：' + dream.slice(0, 22));
+      if (obs) bits.push(tr("panels.obsession_prefix") + obs.slice(0, 20));
+      if (dream) bits.push(tr("panels.last_dream_prefix") + dream.slice(0, 22));
       noteEl.innerHTML = bits.join('　·　');
       return;
     }
-    noteEl.textContent = '悬停节点看说明，点击固定；拖动可旋转';
+    noteEl.textContent = tr("panels.hover_hint");
   }
 
   function pos(e) {

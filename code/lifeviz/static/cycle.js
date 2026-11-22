@@ -1,16 +1,17 @@
 /* 生理周期：30 天圆盘 + 当前指针 + 经期脉动点。 */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const canvas = document.getElementById('cycle-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const PHASES = [
-    { from: 1, to: 5, color: '#fb7185', name: '经期' },
-    { from: 6, to: 12, color: '#4ade80', name: '卵泡期' },
-    { from: 13, to: 15, color: '#a78bfa', name: '排卵期' },
-    { from: 16, to: 23, color: '#fbbf24', name: '黄体期' },
-    { from: 24, to: 30, color: '#94a3b8', name: '经前期' },
+    { from: 1, to: 5, color: '#fb7185', get name() { return tr("panels.menstrual"); } },
+    { from: 6, to: 12, color: '#4ade80', get name() { return tr("panels.follicular"); } },
+    { from: 13, to: 15, color: '#a78bfa', get name() { return tr("panels.ovulation"); } },
+    { from: 16, to: 23, color: '#fbbf24', get name() { return tr("panels.luteal"); } },
+    { from: 24, to: 30, color: '#94a3b8', get name() { return tr("panels.premenstrual"); } },
   ];
   let DAYS = 30;
 
@@ -141,19 +142,19 @@
       ctx.fillStyle = 'rgba(249,168,212,.85)';
       ctx.font = '10px "Microsoft YaHei",sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`雌激素 ${Math.round(est * 100)}`, 6, H - 16);
+      ctx.fillText(`${tr("panels.estrogen")} ${Math.round(est * 100)}`, 6, H - 16);
     }
     if (Number.isFinite(prog)) {
       ctx.fillStyle = 'rgba(196,181,253,.85)';
       ctx.font = '10px "Microsoft YaHei",sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`孕激素 ${Math.round(prog * 100)}`, W - 6, H - 16);
+      ctx.fillText(`${tr("panels.progesterone")} ${Math.round(prog * 100)}`, W - 6, H - 16);
     }
     if (menstruating) {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(251,113,133,.9)';
       ctx.font = '10px "Microsoft YaHei",sans-serif';
-      ctx.fillText('经期 · 会虚弱', cx, H - 16);
+      ctx.fillText(tr("panels.menstrual_weak"), cx, H - 16);
     }
 
     if (reduce) cancelAnimationFrame(0);

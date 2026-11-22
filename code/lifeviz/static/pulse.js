@@ -1,13 +1,14 @@
 /* 生命体征脉冲：近 3 分钟的曲线 + 死亡威胁提示。
    数据来自 app.js 写进 window.__endoState 的那份 /api/state。 */
 (() => {
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
   const SERIES = [
-    { key: 'cortisol', label: '皮质醇', color: '#fb7185' },
-    { key: 'dopamine', label: '多巴胺', color: '#fbbf24' },
-    { key: 'oxytocin', label: '催产素', color: '#67e8f9' },
-    { key: 'melatonin', label: '褪黑素', color: '#818cf8' },
-    { key: 'hunger', label: '饥饿', color: '#f472b6' },
-    { key: 'thirst', label: '口渴', color: '#38bdf8' },
+    { key: 'cortisol', get label() { return tr("panels.cortisol"); }, color: '#fb7185' },
+    { key: 'dopamine', get label() { return tr("panels.dopamine"); }, color: '#fbbf24' },
+    { key: 'oxytocin', get label() { return tr("panels.oxytocin"); }, color: '#67e8f9' },
+    { key: 'melatonin', get label() { return tr("panels.melatonin"); }, color: '#818cf8' },
+    { key: 'hunger', get label() { return tr("panels.hunger"); }, color: '#f472b6' },
+    { key: 'thirst', get label() { return tr("panels.thirst"); }, color: '#38bdf8' },
   ];
   const MAX = 60;            // 3 秒一次轮询 → 约 3 分钟
   const hist = {};
@@ -132,8 +133,8 @@
       if (mortality > 0.25) {
         banner.style.display = 'block';
         banner.textContent = mortality > 0.6
-          ? '饭钱快见底了 · 她在害怕'
-          : '饭钱有点紧张 · 她开始不安';
+          ? tr("panels.funds_critical")
+          : tr("panels.funds_low");
       } else {
         banner.style.display = 'none';
       }

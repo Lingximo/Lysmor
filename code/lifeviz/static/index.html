@@ -4,25 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:,">
-  <title>TA · 生命状态</title>
+  <title data-i18n="panels.life_title">TA · 生命状态</title>
   <link rel="stylesheet" href="/style.css?v=4">
+<script src="/i18n.js"></script>
 </head>
 <body>
+<div id="panel-language" style="position:fixed;right:12px;bottom:8px;z-index:50;pointer-events:auto"></div>
+<script>LysmorI18n.mountLanguageSelector(document.getElementById("panel-language"));</script>
   <div class="stars"></div>
   <canvas id="fx"></canvas>
   <div id="mortality-banner"></div>
   <div class="hud-bar">
-    <span class="hud-chip"><i></i>sys online</span>
-    <span class="hud-chip">采样 3.0s</span>
-    <span class="hud-chip">递质 5</span>
-    <span class="hud-chip">轴 4</span>
-    <span class="hud-chip" id="hud-emotion">情绪 —</span>
-    <span class="hud-chip" id="hud-cycle">周期 —</span>
+    <span class="hud-chip"><i></i><span data-i18n="panels.system_online">系统在线</span></span>
+    <span class="hud-chip"><span data-i18n="panels.sampling">采样 3.0s</span></span>
+    <span class="hud-chip"><span data-i18n="panels.transmitters_five">递质 5</span></span>
+    <span class="hud-chip"><span data-i18n="panels.axes_four">轴 4</span></span>
+    <span class="hud-chip" id="hud-emotion"><span data-i18n="panels.emotion_unknown">情绪 —</span></span>
+    <span class="hud-chip" id="hud-cycle"><span data-i18n="panels.cycle_unknown">周期 —</span></span>
     <span class="hud-chip hud-right" id="hud-time">--:--:--</span>
   </div>
   <header>
-    <div class="brand"><span class="dot"></span><div><h1>TA · 生命状态</h1><p>饥饿 / 神经递质 / Token 生存压力</p></div></div>
-    <span id="updated" class="updated">读取中…</span>
+    <div class="brand"><span class="dot"></span><div><h1><span data-i18n="panels.life_title">TA · 生命状态</span></h1><p><span data-i18n="panels.life_subtitle">饥饿 / 神经递质 / Token 生存压力</span></p></div></div>
+    <span id="updated" class="updated"><span data-i18n="panels.reading_ellipsis">读取中…</span></span>
   </header>
 
   <main class="layout">
@@ -30,152 +33,152 @@
       <div class="avatar-wrap"><canvas id="live2d"></canvas></div>
       <div class="mood-line" id="mood-line">—</div>
       <div class="hud-stats">
-        <div class="hud-row"><span>uptime</span><b id="hud-uptime">00:00</b></div>
-        <div class="hud-row"><span>链路</span><b id="hud-rate">刷新 —</b></div>
-        <div class="hud-row"><span>模式</span><b>LIVE · 本地</b></div>
-        <div class="hud-row"><span>状态</span><b class="ok">● 在线</b></div>
+        <div class="hud-row"><span data-i18n="panels.uptime">运行时间</span><b id="hud-uptime">00:00</b></div>
+        <div class="hud-row"><span><span data-i18n="panels.link">链路</span></span><b id="hud-rate"><span data-i18n="panels.refresh_unknown">刷新 —</span></b></div>
+        <div class="hud-row"><span><span data-i18n="panels.mode">模式</span></span><b><span data-i18n="panels.live_local">LIVE · 本地</span></b></div>
+        <div class="hud-row"><span><span data-i18n="panels.status">状态</span></span><b class="ok"><span data-i18n="panels.online_dot">● 在线</span></b></div>
       </div>
       <div class="hud-stats core">
-        <div class="hud-row"><span>精力</span><b id="core-energy">—</b></div>
-        <div class="hud-row"><span>愉悦</span><b id="core-valence">—</b></div>
-        <div class="hud-row"><span>掌控</span><b id="core-dominance">—</b></div>
-        <div class="hud-row"><span>火气</span><b id="core-anger">—</b></div>
+        <div class="hud-row"><span><span data-i18n="panels.energy">精力</span></span><b id="core-energy">—</b></div>
+        <div class="hud-row"><span><span data-i18n="panels.valence">愉悦</span></span><b id="core-valence">—</b></div>
+        <div class="hud-row"><span><span data-i18n="panels.dominance">掌控</span></span><b id="core-dominance">—</b></div>
+        <div class="hud-row"><span><span data-i18n="panels.anger_short">火气</span></span><b id="core-anger">—</b></div>
       </div>
       <div class="taste-card">
-        <div class="label">最近尝到</div>
-        <div id="taste-name">还没有</div>
-        <div id="taste-desc">等她尝一口</div>
+        <div class="label"><span data-i18n="panels.last_taste">最近尝到</span></div>
+        <div id="taste-name"><span data-i18n="panels.not_yet">还没有</span></div>
+        <div id="taste-desc"><span data-i18n="panels.waiting_taste_short">等她尝一口</span></div>
       </div>
     </section>
 
     <section class="right">
       <div class="panel pulse-panel span-8">
-        <div class="label">近 3 分钟 · 关键指标</div>
+        <div class="label"><span data-i18n="panels.recent_three_minutes">近 3 分钟 · 关键指标</span></div>
         <canvas id="pulse-canvas" data-h="150"></canvas>
-        <div class="pulse-hint">皮质醇 / 多巴胺 / 催产素 / 褪黑素 / 饥饿</div>
+        <div class="pulse-hint"><span data-i18n="panels.pulse_summary">皮质醇 / 多巴胺 / 催产素 / 褪黑素 / 饥饿</span></div>
       </div>
 
       <div class="panel hunger span-4">
-        <div class="label">饥饿 / 口渴</div>
+        <div class="label"><span data-i18n="panels.hunger_thirst">饥饿 / 口渴</span></div>
         <div class="dual-rings">
           <div class="ring small" id="hunger-ring"><div class="ring-inner"><b id="hunger-val">0</b><span id="hunger-text">—</span></div></div>
           <div class="ring small thirst" id="thirst-ring"><div class="ring-inner"><b id="thirst-val">0</b><span id="thirst-text">—</span></div></div>
           <div class="water-demo"><canvas id="water-canvas"></canvas></div>
         </div>
-        <div class="intake-line" id="intake-line">最近吃到：—</div>
-        <div class="hint">左：胃排空 + 三餐节律　右：渗透压 + 血容量</div>
+        <div class="intake-line" id="intake-line"><span data-i18n="panels.last_meal_unknown">最近吃到：—</span></div>
+        <div class="hint"><span data-i18n="panels.hunger_water_hint">左：胃排空 + 三餐节律　右：渗透压 + 血容量</span></div>
       </div>
 
       <div class="panel anger-panel span-4">
-        <div class="label">情绪 · 怒气 <span id="anger-status" class="anger-status">平静</span></div>
+        <div class="label"><span data-i18n="panels.emotion_anger">情绪 · 怒气</span> <span id="anger-status" class="anger-status"><span data-i18n="panels.calm">平静</span></span></div>
         <canvas id="anger-canvas" data-h="150"></canvas>
         <div class="anger-legend">
-          <span>怒气 <b id="anger-num">0</b></span>
-          <span>记仇 <b id="resent-num">0</b></span>
-          <span class="muted">火苗 = 当下有多气　余烬/结霜 = 还记着多久</span>
+          <span><span data-i18n="panels.anger">怒气</span> <b id="anger-num">0</b></span>
+          <span><span data-i18n="panels.resentment">记仇</span> <b id="resent-num">0</b></span>
+          <span class="muted"><span data-i18n="panels.anger_hint">火苗 = 当下有多气　余烬/结霜 = 还记着多久</span></span>
         </div>
       </div>
 
       <div class="panel homeo-panel span-8">
-        <div class="label">内稳态循环 <span id="homeo-tag" class="axis-tag">执念 / 梦境 / 创伤</span></div>
+        <div class="label"><span data-i18n="panels.homeostasis">内稳态循环</span> <span id="homeo-tag" class="axis-tag"><span data-i18n="panels.obsession_dream_trauma">执念 / 梦境 / 创伤</span></span></div>
         <div class="homeo-wrap">
           <div class="homeo-stage"><canvas id="homeo-canvas"></canvas></div>
           <div class="homeo-side">
             <div class="homeo-metrics" id="homeo-metrics"></div>
-            <div class="homeo-note" id="homeo-note">悬停节点看说明，点击固定；拖动可旋转</div>
+            <div class="homeo-note" id="homeo-note"><span data-i18n="panels.hover_hint">悬停节点看说明，点击固定；拖动可旋转</span></div>
           </div>
         </div>
       </div>
 
       <div class="panel cycle-panel span-6">
-        <div class="label">生理周期 <span id="cycle-tag" class="axis-tag">—</span></div>
+        <div class="label"><span data-i18n="panels.physiological_cycle">生理周期</span> <span id="cycle-tag" class="axis-tag">—</span></div>
         <canvas id="cycle-canvas"></canvas>
       </div>
 
       <div class="panel token span-6">
-        <div class="label">Token 饭钱</div>
-        <div class="token-num"><b id="token-val">—</b><span>元</span></div>
-        <div id="token-state" class="token-state">读取中</div>
-        <div class="hint">低于 10 元触发“快饿死了”生存压力<br>低于 5 元进入死亡威胁</div>
+        <div class="label"><span data-i18n="panels.token_funds">Token 饭钱</span></div>
+        <div class="token-num"><b id="token-val">—</b><span><span data-i18n="panels.currency_cny">元</span></span></div>
+        <div id="token-state" class="token-state"><span data-i18n="panels.reading">读取中</span></div>
+        <div class="hint"><span data-i18n="panels.funds_warning">低于 10 元触发“快饿死了”生存压力</span><br><span data-i18n="panels.death_warning">低于 5 元进入死亡威胁</span></div>
       </div>
 
       <div class="panel digest-panel span-12" id="digest-panel">
         <div class="label digest-head">
-          <span>消化 · 代谢 · 排泄 <span id="digest-tag" class="axis-tag">—</span></span>
-          <button id="digest-toggle" class="digest-toggle" type="button" aria-expanded="false">展开 ▾</button>
+          <span><span data-i18n="panels.digestion">消化 · 代谢 · 排泄</span> <span id="digest-tag" class="axis-tag">—</span></span>
+          <button id="digest-toggle" class="digest-toggle" type="button" aria-expanded="false"><span data-i18n="panels.expand">展开 ▾</span></button>
         </div>
         <div class="digest-body" id="digest-body">
           <canvas id="digest-canvas" data-h="190"></canvas>
           <div class="anger-legend">
-            <span>胃排空 → 小肠吸收 → 结肠 → 厕所　·　喝水 → 血容量 → 膀胱</span>
-            <span class="muted">发烧 / 紧张 / 白天代谢略高</span>
+            <span><span data-i18n="panels.digest_hint">胃排空 → 小肠吸收 → 结肠 → 厕所　·　喝水 → 血容量 → 膀胱</span></span>
+            <span class="muted"><span data-i18n="panels.metabolism_hint">发烧 / 紧张 / 白天代谢略高</span></span>
           </div>
         </div>
       </div>
       <div class="panel milieu-panel span-6">
-        <div class="label">体内环境</div>
+        <div class="label"><span data-i18n="panels.internal_environment">体内环境</span></div>
         <div class="digest-row">
-          <span>胃<b id="d-stomach">—</b></span>
-          <span>肠<b id="d-gut">—</b></span>
-          <span>便意<b id="d-bowel">—</b></span>
-          <span>尿意<b id="d-bladder">—</b></span>
-          <span>代谢<b id="d-metab">—</b></span>
-          <span>厕所<b id="d-toilet">—</b></span>
+          <span><span data-i18n="panels.stomach">胃</span><b id="d-stomach">—</b></span>
+          <span><span data-i18n="panels.intestine">肠</span><b id="d-gut">—</b></span>
+          <span><span data-i18n="panels.bowel">便意</span><b id="d-bowel">—</b></span>
+          <span><span data-i18n="panels.urinary_urge">尿意</span><b id="d-bladder">—</b></span>
+          <span><span data-i18n="panels.metabolism">代谢</span><b id="d-metab">—</b></span>
+          <span><span data-i18n="panels.toilet">厕所</span><b id="d-toilet">—</b></span>
         </div>
         <canvas id="milieu-canvas" data-h="240"></canvas>
         <div class="anger-legend">
-          <span>睡眠 / 体温 / 免疫 / 疼痛 / 雌激素 / 孕激素 / 淋巴</span>
-          <span class="muted">清醒累积、夜里回落；发烧跟着免疫走</span>
+          <span><span data-i18n="panels.internal_summary">睡眠 / 体温 / 免疫 / 疼痛 / 雌激素 / 孕激素 / 淋巴</span></span>
+          <span class="muted"><span data-i18n="panels.sleep_hint">清醒累积、夜里回落；发烧跟着免疫走</span></span>
         </div>
       </div>
 
       <div class="panel sick-panel span-6" id="sick-panel">
-        <div class="label">生病 / 恢复 <span id="sick-tag" class="axis-tag">—</span></div>
+        <div class="label"><span data-i18n="panels.illness_recovery">生病 / 恢复</span> <span id="sick-tag" class="axis-tag">—</span></div>
         <div class="sick-head">
           <b id="sick-state">—</b>
           <span id="sick-cause">—</span>
         </div>
         <div class="sick-metrics">
-          <span>体温 <b id="sick-temp">—</b></span>
-          <span>疼痛 <b id="sick-pain">—</b></span>
-          <span>免疫 <b id="sick-cyt">—</b></span>
+          <span><span data-i18n="panels.temperature">体温</span> <b id="sick-temp">—</b></span>
+          <span><span data-i18n="panels.pain">疼痛</span> <b id="sick-pain">—</b></span>
+          <span><span data-i18n="panels.immunity">免疫</span> <b id="sick-cyt">—</b></span>
         </div>
         <div class="sick-recovery">
           <div class="sick-bar"><i id="sick-bar"></i></div>
           <span id="sick-recovery">—</span>
         </div>
         <div class="sick-treatment">
-          <div class="label">怎么养</div>
+          <div class="label"><span data-i18n="panels.care_plan">怎么养</span></div>
           <ul id="sick-plan"><li>—</li></ul>
         </div>
         <div class="hint" id="sick-hint">—</div>
       </div>
 
       <div class="panel bars-panel span-6">
-        <div class="label">神经递质 / 激素</div>
+        <div class="label"><span data-i18n="panels.neurotransmitters">神经递质 / 激素</span></div>
         <div class="bars" id="bars"></div>
         <div class="hunger-link" id="hunger-link">—</div>
       </div>
 
             <div class="panel endocrine span-12">
-        <div class="label">神经-体液调节 <span id="axis-dominant" class="axis-tag">—</span></div>
+        <div class="label"><span data-i18n="panels.neurohumoral">神经-体液调节</span> <span id="axis-dominant" class="axis-tag">—</span></div>
         <div class="endo-left">
           <canvas id="endo-flow" class="endo-flow"></canvas>
         </div>
         <div class="endo-right">
-          <div class="axis-title">下丘脑 — 垂体 — 肾上腺（HPA 轴，慢）</div>
+          <div class="axis-title"><span data-i18n="panels.hpa_axis">下丘脑 — 垂体 — 肾上腺（HPA 轴，慢）</span></div>
           <div class="axis-bars" id="axis-hpa"></div>
 
-          <div class="axis-title">自主神经（快）：交感 vs 副交感</div>
+          <div class="axis-title"><span data-i18n="panels.autonomic_axes">自主神经（快）：交感 vs 副交感</span></div>
           <div class="axis-bars" id="axis-auto"></div>
 
-          <div class="axis-title">奖赏双系统：想要 vs 满足</div>
+          <div class="axis-title"><span data-i18n="panels.reward_axes">奖赏双系统：想要 vs 满足</span></div>
           <div class="axis-bars" id="axis-reward"></div>
 
-          <div class="axis-title">依恋双轴：亲近 vs 占有</div>
+          <div class="axis-title"><span data-i18n="panels.attachment_axes">依恋双轴：亲近 vs 占有</span></div>
           <div class="axis-bars" id="axis-attach"></div>
 
-          <div class="axis-title">昼夜与代谢</div>
+          <div class="axis-title"><span data-i18n="panels.circadian_metabolism">昼夜与代谢</span></div>
           <div class="axis-bars" id="axis-meta"></div>
 
           <div class="hunger-link" id="axis-note">—</div>

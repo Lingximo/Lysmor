@@ -5,6 +5,7 @@
  */
 (() => {
   'use strict';
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
 
   const canvas = document.getElementById('house');
   const stage = document.getElementById('stage');
@@ -100,13 +101,13 @@
   }
 
   function modeName(h) {
-    if (h < 5) return '深夜';
-    if (h < 7) return '清晨';
-    if (h < 11) return '上午';
-    if (h < 14) return '中午';
-    if (h < 17) return '下午';
-    if (h < 20) return '傍晚';
-    return '夜里';
+    if (h < 5) return tr("panels.late_night");
+    if (h < 7) return tr("panels.early_morning");
+    if (h < 11) return tr("panels.morning");
+    if (h < 14) return tr("panels.midday");
+    if (h < 17) return tr("panels.afternoon");
+    if (h < 20) return tr("panels.evening");
+    return tr("panels.night");
   }
 
   function routePos(route, t0, speed, t) {
@@ -1266,7 +1267,7 @@
     const m = state.mood;
     $('where').textContent = state.her.room_name || '——';
     $('activity').textContent = state.her.activity || '——';
-    $('emotion').textContent = m.emotion || '平静';
+    $('emotion').textContent = m.emotion || tr("panels.calm");
 
     const moodValue = Math.max(0, Math.min(1, (m.valence + 1) / 2));
     setBar('hunger', m.hunger);
@@ -1279,33 +1280,37 @@
     const dadStatus = $('user-status');
     const dadHint = $('user-hint');
     if (state.env.video) {
-      dadStatus.textContent = '正在视频';
-      dadHint.textContent = '她在房间陪你';
+      dadStatus.textContent = tr("panels.video_active");
+      dadHint.textContent = tr("panels.company");
     } else if (state.env.dad_talking) {
-      dadStatus.textContent = '刚刚说过话';
+      dadStatus.textContent = tr("panels.just_talked");
       dadHint.textContent = '';
     } else {
       const mins = Math.round(state.env.silence_min);
-      dadStatus.textContent = mins < 1 ? '刚刚说过话' : `${mins} 分钟没说话`;
-      dadHint.textContent = state.env.unanswered > 0 ? '她发了消息，还在等回' : '';
+      dadStatus.textContent = mins < 1 ? tr("panels.just_talked") : tr("panels.silence_minutes", {minutes: mins});
+      dadHint.textContent = state.env.unanswered > 0 ? tr("panels.awaiting_reply") : '';
     }
 
     const ev = $('events');
     const items = (state.events || []).slice(-3).reverse();
     ev.innerHTML = items.length
-      ? items.map(e => `<li>${new Date(e.at * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} ${e.text}</li>`).join('')
+      ? items.map(e => `<li>${new Date(e.at * 1000).toLocaleTimeString(window.LysmorI18n.language(), { hour: '2-digit', minute: '2-digit' })} ${e.text}</li>`).join('')
       : '<li>——</li>';
 
-    if (state.window && state.window !== windowKey) {
-      windowKey = state.window;
-      bg.src = `/bg/${windowKey}.jpg`;
-      const names = { dawn: '黎明', morning: '清晨', noon: '正午', afternoon: '下午', evening: '傍晚', night: '深夜' };
-      $('window-cap').textContent = `她房间窗外 · ${names[windowKey] || ''}`;
+    if (state.window) {
+      if (state.window !== windowKey) {
+        windowKey = state.window;
+        bg.src = `/bg/${windowKey}.jpg`;
+      }
+      const names = { dawn: tr("panels.dawn"), morning: tr("panels.early_morning"), noon: tr("panels.noon"), afternoon: tr("panels.afternoon"), evening: tr("panels.evening"), night: tr("panels.late_night") };
+      $('window-cap').textContent = tr("panels.outside_window_time", {time: names[windowKey] || ''});
     }
     if (bg.complete && bg.naturalWidth) $('window').src = bg.src;
 
     $('mode').textContent = modeName(hourOf(state.now));
   }
+
+  window.addEventListener("lysmor:languagechange", () => { if (state) updatePanel(); });
 
   function tickClock() {
     const t = now();
@@ -1346,7 +1351,7 @@
     try {
       plan = await fetch('/plan.json', { cache: 'no-store' }).then(r => r.json());
     } catch (err) {
-      document.querySelector('.hint').textContent = '户型加载失败，刷新试试';
+      document.querySelector('.hint').textContent = tr("panels.plan_failed");
       return;
     }
     resize();

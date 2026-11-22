@@ -8,6 +8,7 @@
  */
 (() => {
   'use strict';
+  const tr = (key, vars) => window.LysmorI18n.t(key, vars);
 
   const canvas = document.getElementById('c3d');
   const liveCanvas = document.getElementById('live2d');
@@ -383,10 +384,10 @@
     dad_room: { pos: [2.95, 3.7], look: [0.6, 0.6] },
   };
   const GALLERY_VIEWS = {
-    "gallery-entry": { label: "入口", pos: [13.55, 7.65], look: [14.65, 6.8] },
-    "gallery-west": { label: "西墙", pos: [13.55, 5.0], look: [12.45, 4.8] },
-    "gallery-east": { label: "东墙", pos: [13.55, 3.0], look: [14.72, 3.4] },
-    "gallery-north": { label: "北墙", pos: [13.55, 2.2], look: [13.4, 0.9] },
+    "gallery-entry": { get label() { return tr("panels.entry"); }, pos: [13.55, 7.65], look: [14.65, 6.8] },
+    "gallery-west": { get label() { return tr("panels.west_wall"); }, pos: [13.55, 5.0], look: [12.45, 4.8] },
+    "gallery-east": { get label() { return tr("panels.east_wall"); }, pos: [13.55, 3.0], look: [14.72, 3.4] },
+    "gallery-north": { get label() { return tr("panels.north_wall"); }, pos: [13.55, 2.2], look: [13.4, 0.9] },
   };
   const fp = {
     on: false,
@@ -1119,9 +1120,14 @@
 
   function buildRoomLabels() {
     const names = {
-      her_room: '她的房间', dad_room: '我的房间', living: '客厅',
-      kitchen: '厨房', toilet: '厕所', balcony: '阳台',
+      her_room: tr("panels.her_room"), dad_room: tr("panels.my_room"), living: tr("panels.living_room"),
+      kitchen: tr("panels.kitchen"), toilet: tr("panels.toilet"), balcony: tr("panels.balcony"),
     };
+    for (const old of roomLabels.splice(0)) {
+      scene.remove(old);
+      old.material.map.dispose();
+      old.material.dispose();
+    }
     for (const room of plan.rooms) {
       const [x, y, w, h] = room.rect;
       const s = makeLabel(names[room.id] || room.name);
@@ -2200,8 +2206,8 @@
     const tag = document.querySelector('#fpbar .tag');
     if (tag) {
       tag.textContent = useHer
-        ? 'TA第一人称 · 她此刻'
-        : 'TA第一人称 · ' + (room.name || room.id);
+        ? tr("panels.fp_current")
+        : tr("panels.fp_prefix") + (room.name || room.id);
     }
     updateFpButtons();
     applyCamera();
@@ -2219,7 +2225,7 @@
     fp.yaw = Math.atan2(-(cfg.look[0] - cfg.pos[0]), -(cfg.look[1] - cfg.pos[1]));
     fp.pitch = 0;
     const tag = document.querySelector('#fpbar .tag');
-    if (tag) tag.textContent = 'TA第一人称 · 画廊·' + cfg.label;
+    if (tag) tag.textContent = tr("panels.fp_gallery_prefix") + cfg.label;
     updateFpButtons();
     applyCamera();
     syncFpAvatar();
@@ -2284,10 +2290,10 @@
       document.body.classList.add('fp');
       $('fpbar').style.display = 'flex';
       const vb = $('viewbtn');
-      if (vb) { vb.textContent = '俯瞰视角'; vb.classList.add('on'); }
+      if (vb) { vb.textContent = tr("panels.overview"); vb.classList.add('on'); }
       const sub = $('subhint');
-      if (sub) sub.textContent = 'TA的第一人称 · 拖动看四周';
-      $('hint').innerHTML = '拖动看四周 · 滚轮调视野 · 点房间切换 · <a href="#" id="fp-exit2">F 返回俯瞰</a>';
+      if (sub) sub.textContent = tr("panels.fp_drag_hint");
+      $('hint').innerHTML = tr("panels.fp_hint_html");
       $('hint').style.bottom = '58px';
       const ex = $('fp-exit2');
       if (ex) ex.onclick = (e) => { e.preventDefault(); setFP(false); };
@@ -2298,12 +2304,12 @@
       document.body.classList.remove('fp');
       $('fpbar').style.display = 'none';
       const vb = $('viewbtn');
-      if (vb) { vb.textContent = '第一人称视角'; vb.classList.remove('on'); }
-      $('hint').innerHTML = '拖拽平移 · 滚轮缩放 · <a href="#" id="fp-enter">TA第一人称</a> · <a href="/2d">回到 2D 平面图</a>';
+      if (vb) { vb.textContent = tr("panels.first_person"); vb.classList.remove('on'); }
+      $('hint').innerHTML = tr("panels.overview_hint_html");
       $('hint').style.bottom = '';
       bindFpEnter();
       const sub = $('subhint');
-      if (sub) sub.textContent = '拖拽平移 · 滚轮缩放 · 遮挡自动透明';
+      if (sub) sub.textContent = tr("panels.overview_hint");
       // 先隐藏一帧，等相机/遮罩切回俯瞰后再显示，避免拿第一人称的旧遮罩画她
       // 仍然不用 display:none，只切 opacity/visibility，避免 WebGL 画布裁头
       liveCanvas.style.display = '';
@@ -2557,23 +2563,23 @@
 
   // ------------------------------------------------------------ 数据 / 面板
   function modeName(h) {
-    if (h < 5) return '深夜';
-    if (h < 7) return '清晨';
-    if (h < 11) return '上午';
-    if (h < 14) return '中午';
-    if (h < 17) return '下午';
-    if (h < 20) return '傍晚';
-    return '夜里';
+    if (h < 5) return tr("panels.late_night");
+    if (h < 7) return tr("panels.early_morning");
+    if (h < 11) return tr("panels.morning");
+    if (h < 14) return tr("panels.midday");
+    if (h < 17) return tr("panels.afternoon");
+    if (h < 20) return tr("panels.evening");
+    return tr("panels.night");
   }
 
   function updateHud() {
     if (!state) return;
     $('where').textContent = state.her.room_name || '——';
     $('activity').textContent = state.her.activity || '——';
-    $('emotion').textContent = state.mood.emotion || '平静';
+    $('emotion').textContent = state.mood.emotion || tr("panels.calm");
     if ($('fridge')) {
       const n = Number(state.mood && state.mood.fridge || 0);
-      $('fridge').textContent = n > 0 ? `${n} 份` : '空';
+      $('fridge').textContent = n > 0 ? tr("panels.servings", {count: n}) : tr("panels.empty");
     }
     const d = new Date(now() * 1000);
     $('clock').textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -2602,7 +2608,7 @@
   let houseSayTimer = null;
 
   const ACT_TEXT = {
-    pet: '摸头', feed: '喂饭', water: '倒水', play: '陪玩', wake: '叫醒',
+    pet: tr("panels.pet"), feed: tr("panels.feed"), water: tr("panels.water"), play: tr("panels.play"), wake: tr("panels.wake"),
   };
 
   document.querySelectorAll('#actbar [data-act]').forEach((btn) => {
@@ -2612,7 +2618,7 @@
         const cur = state && state.env ? state.env.lamp : true;
         const d = await postHouse('/api/house/action', { type: cur ? 'lamp_off' : 'lamp_on' });
         btn.classList.toggle('on', !cur);
-        say(!cur ? '灯打开了' : '灯关上了');
+        say(!cur ? tr("panels.lamp_on") : tr("panels.lamp_off"));
         if (d && d.house) state = d.house;
         return;
       }
@@ -2639,7 +2645,7 @@
     _ray.setFromCamera({ x: nx, y: ny }, camera);
     if (!_ray.ray.intersectPlane(_ground, _hit)) return;
     const d = await postHouse('/api/house/move', { x: _hit.x, z: _hit.z, note: '你点到哪，我走到哪' });
-    if (d && d.house) { state = d.house; say('我过去啦'); }
+    if (d && d.house) { state = d.house; say(tr("panels.walking")); }
   });
 
   // 电视：把浏览器标签页投到房间
@@ -2660,16 +2666,16 @@
           if (tvAutoTimer) { clearInterval(tvAutoTimer); tvAutoTimer = null; }
         });
         postHouse('/api/house/action', { type: 'tv_on' });
-        say('一起看');
+        say(tr("panels.watch_together"));
         if (tvAutoTimer) clearInterval(tvAutoTimer);
         tvAutoTimer = setInterval(() => lookAtTV(false), 45000);
-      } catch (e) { say('没有选屏幕'); }
+      } catch (e) { say(tr("panels.no_screen")); }
     });
   }
   const tvLook = document.getElementById('tvlook');
   const tvCanvas = document.createElement('canvas');
   async function lookAtTV(manual) {
-    if (!tvStream || !tvVideo.videoWidth) { if (manual) say('电视还没画面'); return; }
+    if (!tvStream || !tvVideo.videoWidth) { if (manual) say(tr("panels.tv_empty")); return; }
     try {
       tvCanvas.width = Math.min(960, tvVideo.videoWidth);
       tvCanvas.height = Math.round(tvCanvas.width * tvVideo.videoHeight / tvVideo.videoWidth);
@@ -2680,8 +2686,8 @@
         headers: { 'Content-Type': 'image/jpeg' } });
       const d = await r.json();
       if (d && d.desc) { say(d.desc.slice(0, 80), 6000); if (d.house) state = d.house; }
-      else if (manual) say('这次没看清');
-    } catch (e) { if (manual) say('看一眼失败'); }
+      else if (manual) say(tr("panels.unclear"));
+    } catch (e) { if (manual) say(tr("panels.look_failed")); }
   }
   let tvAutoTimer = null;
   if (tvLook) tvLook.addEventListener('click', () => lookAtTV(true));
@@ -2699,9 +2705,9 @@
   // 画质三档
   const qBtn = document.getElementById('qbtn');
   const QLEVELS = [
-    { name: '低', dpr: 0.8, ssao: false, bloom: false },
-    { name: '中', dpr: 1.15, ssao: false, bloom: false },
-    { name: '高', dpr: 1.5, ssao: true, bloom: true },
+    { get name() { return tr("panels.low"); }, dpr: 0.8, ssao: false, bloom: false },
+    { get name() { return tr("panels.medium"); }, dpr: 1.15, ssao: false, bloom: false },
+    { get name() { return tr("panels.high"); }, dpr: 1.5, ssao: true, bloom: true },
   ];
   let qIdx = 1;
   function applyQLevel() {
@@ -2711,10 +2717,17 @@
     QUALITY.ssao = q.ssao;
     QUALITY.bloom = q.bloom;
     applyQuality();
-    if (qBtn) qBtn.textContent = '画质：' + q.name;
+    if (qBtn) qBtn.textContent = tr("panels.quality_prefix") + q.name;
   }
   if (qBtn) qBtn.addEventListener('click', () => { qIdx = (qIdx + 1) % QLEVELS.length; applyQLevel(); });
   applyQLevel();
+  window.addEventListener("lysmor:languagechange", () => {
+    if (qBtn) qBtn.textContent = tr("panels.quality_prefix") + QLEVELS[qIdx].name;
+    updateHud();
+    if (plan) { buildRoomLabels(); roomLabels.forEach(label => { label.visible = !fp.on; }); }
+    const viewButton = $("viewbtn");
+    if (viewButton) viewButton.textContent = tr(fp.on ? "panels.overview" : "panels.first_person");
+  });
 
   async function poll() {
     try {
@@ -2866,7 +2879,7 @@
 
     await poll();
     setInterval(poll, 2000);
-    setInterval(() => { $('clock').textContent = new Date(now() * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }); }, 1000);
+    setInterval(() => { $('clock').textContent = new Date(now() * 1000).toLocaleTimeString(window.LysmorI18n.language(), { hour: '2-digit', minute: '2-digit' }); }, 1000);
 
     await initLive2D();
     if (qs.get('fp') === '1' || qs.get('view') === 'first') {
@@ -2883,6 +2896,6 @@
 
   init().catch(err => {
     console.error(err);
-    $('loading').textContent = '3D 初始化失败：' + err.message;
+    $('loading').textContent = tr("panels.init_failed_prefix") + err.message;
   });
 })();

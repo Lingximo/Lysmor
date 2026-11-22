@@ -3,84 +3,87 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>记忆大脑 · TA</title>
+  <title data-i18n="panels.memory_title">记忆大脑 · TA</title>
   <link rel="stylesheet" href="/style.css">
+<script src="/i18n.js"></script>
 </head>
 <body>
+<div id="panel-language" style="position:fixed;right:12px;bottom:8px;z-index:50;pointer-events:auto"></div>
+<script>LysmorI18n.mountLanguageSelector(document.getElementById("panel-language"));</script>
   <canvas id="scene"></canvas>
 
   <header class="topbar">
     <div class="brand">
       <span class="brand-dot"></span>
       <div>
-        <h1>记忆大脑</h1>
-        <p>TA · LivingMemory 只读视图</p>
+        <h1><span data-i18n="panels.memory_brain">记忆大脑</span></h1>
+        <p><span data-i18n="panels.memory_subtitle">TA · LivingMemory 只读视图</span></p>
       </div>
     </div>
     <div class="search-wrap">
-      <input id="search" type="search" placeholder="搜一条记忆，比如：最近在忙什么" autocomplete="off">
-      <button id="search-btn">搜</button>
+      <input id="search" type="search" placeholder="搜一条记忆，比如：最近在忙什么" autocomplete="off" data-i18n-placeholder="panels.search_placeholder">
+      <button id="search-btn"><span data-i18n="panels.search">搜</span></button>
       <div id="search-results" class="search-results"></div>
     </div>
     <div class="top-actions">
-      <button id="rotate-btn" class="active">3D 旋转</button>
-      <button id="reset-btn">重置视角</button>
-      <button id="refresh-btn">刷新</button>
-      <span id="status" class="status">连接中…</span>
+      <button id="rotate-btn" class="active"><span data-i18n="panels.rotate_3d">3D 旋转</span></button>
+      <button id="reset-btn"><span data-i18n="panels.reset_view">重置视角</span></button>
+      <button id="refresh-btn"><span data-i18n="panels.refresh">刷新</span></button>
+      <span id="status" class="status"><span data-i18n="panels.connecting">连接中…</span></span>
     </div>
   </header>
 
   <aside class="sidebar">
     <section class="panel stats">
-      <div class="stat"><b id="stat-nodes">-</b><span>节点</span></div>
-      <div class="stat"><b id="stat-edges">-</b><span>连线</span></div>
-      <div class="stat"><b id="stat-atoms">-</b><span>原子</span></div>
-      <div class="stat"><b id="stat-memories">-</b><span>记忆</span></div>
+      <div class="stat"><b id="stat-nodes">-</b><span><span data-i18n="panels.nodes">节点</span></span></div>
+      <div class="stat"><b id="stat-edges">-</b><span><span data-i18n="panels.edges">连线</span></span></div>
+      <div class="stat"><b id="stat-atoms">-</b><span><span data-i18n="panels.atoms">原子</span></span></div>
+      <div class="stat"><b id="stat-memories">-</b><span><span data-i18n="panels.memory">记忆</span></span></div>
     </section>
 
     <section class="panel">
-      <h2>脑区 · 记忆住在哪</h2>
-      <div id="regions" class="regions">加载中…</div>
+      <h2><span data-i18n="panels.brain_regions">脑区 · 记忆住在哪</span></h2>
+      <div id="regions" class="regions"><span data-i18n="panels.loading">加载中…</span></div>
     </section>
 
     <section class="panel">
-      <h2>遗忘曲线</h2>
+      <h2><span data-i18n="panels.decay_curve">遗忘曲线</span></h2>
       <canvas id="decay-canvas" class="decay-canvas"></canvas>
       <div id="decay-legend" class="decay-legend"></div>
-      <div id="decay-note" class="decay-note">点图上的点，看是哪条记忆</div>
+      <div id="decay-note" class="decay-note"><span data-i18n="panels.memory_point_hint">点图上的点，看是哪条记忆</span></div>
     </section>
 
     <section class="panel">
-      <h2>记忆体温</h2>
+      <h2><span data-i18n="panels.memory_temperature">记忆体温</span></h2>
       <div id="phases" class="phases"></div>
       <div class="vitals">
-        <div><b id="vital-clarity">-</b><span>平均清晰度</span></div>
-        <div><b id="vital-drop">-</b><span>今日预计淡忘</span></div>
+        <div><b id="vital-clarity">-</b><span><span data-i18n="panels.avg_clarity">平均清晰度</span></span></div>
+        <div><b id="vital-drop">-</b><span><span data-i18n="panels.estimated_fading">今日预计淡忘</span></span></div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>最该被想起</h2>
-      <div id="fading" class="fading">加载中…</div>
+      <h2><span data-i18n="panels.recall_priority">最该被想起</span></h2>
+      <div id="fading" class="fading"><span data-i18n="panels.loading">加载中…</span></div>
     </section>
 
     <section class="panel">
-      <h2>图例</h2>
+      <h2><span data-i18n="panels.legend">图例</span></h2>
       <div class="legend" id="legend"></div>
     </section>
 
     <section class="panel">
-      <h2>最近记忆</h2>
-      <div id="recent" class="recent">加载中…</div>
+      <h2><span data-i18n="panels.recent_memories">最近记忆</span></h2>
+      <div id="recent" class="recent"><span data-i18n="panels.loading">加载中…</span></div>
     </section>
 
     <section class="panel detail">
-      <h2>选中节点</h2>
-      <div id="detail" class="detail-body">点一个发光的点看看</div>
+      <h2><span data-i18n="panels.selected_node">选中节点</span></h2>
+      <div id="detail" class="detail-body"><span data-i18n="panels.select_node">点一个发光的点看看</span></div>
     </section>
   </aside>
 
-  <div class="hint">拖动旋转 · 滚轮缩放 · 点节点看关系 · 光圈外越远的星越老，越暗越淡</div>
+  <div class="hint"><span data-i18n="panels.brain_hint">拖动旋转 · 滚轮缩放 · 点节点看关系 · 光圈外越远的星越老，越暗越淡</span></div>
   <div id="toast" class="toast"></div>
 
   <script src="/app.js"></script>
