@@ -112,6 +112,38 @@ class MemoryReviewTests(unittest.TestCase):
         with patch.object(brain, '_load_mem_graph', return_value={}):
             self.assertEqual(brain.ppr_expand([1]), [])
 
+    def test_graph_reads_committed_wal_without_waiting_for_checkpoint(self):
+        brain = load_module('review_graph_wal', 'code/lab/memory_brain/companion_brain.py')
+        self.addCleanup(brain._GRAPH_CACHE.close)
+        self.writer.executescript('''
+            create table graph_edges(source_memory_id, target_memory_id, status);
+            create table graph_entries(id, source_memory_id);
+            create table graph_entry_nodes(entry_id, node_id);
+            insert into graph_edges values(1,2,'active');
+        ''')
+        with patch.object(brain, 'DB', str(self.db)):
+            self.assertEqual(brain.ppr_expand([1]), [2])
+            main_mtime = self.db.stat().st_mtime_ns
+            self.writer.execute("update graph_edges set target_memory_id=3")
+            self.assertEqual(brain.ppr_expand([1]), [2])
+            self.writer.commit()
+            self.assertEqual(self.db.stat().st_mtime_ns, main_mtime)
+            self.assertEqual(brain.ppr_expand([1]), [3])
+
+    def test_links_read_committed_wal_and_do_not_keep_deleted_rows(self):
+        brain = load_module('review_links_wal', 'code/lab/memory_brain/companion_brain.py')
+        self.addCleanup(brain._LINKS_CACHE.close)
+        self.writer.executescript('create table links(a,b,sim); insert into links values(1,2,0.9);')
+        with patch.object(brain, 'LINKS_DB', str(self.db)):
+            self.assertEqual(brain.load_links(), {1: [(2, 0.9)]})
+            main_mtime = self.db.stat().st_mtime_ns
+            self.writer.execute('delete from links')
+            self.writer.commit()
+            self.assertEqual(self.db.stat().st_mtime_ns, main_mtime)
+            self.assertEqual(brain.load_links(), {})
+            with patch.object(brain, '_read_links', side_effect=AssertionError('cache miss')):
+                self.assertEqual(brain.load_links(), {})
+
     def test_memory_translations_cover_call_sites_and_preserve_variables(self):
         import i18n
 
