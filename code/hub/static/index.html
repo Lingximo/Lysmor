@@ -76,23 +76,24 @@
   <header>
     <i class="dot" id="dot"></i>
     <h1>TA</h1>
-    <span class="mood" id="mood">连接中…</span>
+    <span class="mood" id="mood" data-i18n="primary.hub.connecting"></span>
     <span class="sp"></span>
     <span class="now" id="now"></span>
+    <select data-language-select></select>
   </header>
 
   <nav id="nav">
-    <button data-v="all" class="on">全部</button>
-    <button data-v="life">状态</button>
-    <button data-v="ops">观测</button>
+    <button data-v="all" class="on" data-i18n="primary.hub.all"></button>
+    <button data-v="life" data-i18n="primary.hub.status"></button>
+    <button data-v="ops" data-i18n="primary.hub.observe"></button>
   </nav>
 
   <main>
     <section class="view on" id="v-chat">
-      <iframe id="fr-chat" title="聊天" loading="lazy" allow="camera; microphone; display-capture"></iframe>
+      <iframe id="fr-chat" data-i18n-title="primary.hub.frame_chat" loading="lazy" allow="camera; microphone; display-capture"></iframe>
     </section>
     <section class="view" id="v-call">
-      <iframe id="fr-call" title="视频" loading="lazy" allow="camera; microphone; display-capture"></iframe>
+      <iframe id="fr-call" data-i18n-title="primary.hub.frame_video" loading="lazy" allow="camera; microphone; display-capture"></iframe>
     </section>
 
     <section class="view" id="v-ops">
@@ -100,7 +101,7 @@
         <div class="grid" id="ops-cards"></div>
         <div style="height:16px"></div>
         <div class="card">
-          <div class="k" style="margin-bottom:8px">最近 10 轮</div>
+          <div class="k" style="margin-bottom:8px" data-i18n="primary.hub.recent_turns"></div>
           <div id="ops-recent" style="font-size:12px;color:#9fb3c8;line-height:1.9"></div>
         </div>
       </div>
@@ -120,10 +121,10 @@
         <div class="card" id="outing" style="margin-bottom:14px;border-color:rgba(255,170,90,.28);background:linear-gradient(135deg,rgba(50,28,18,.7),rgba(13,22,38,.9))">
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
             <div style="flex:1;min-width:210px">
-              <div class="k">带TA出门</div>
-              <div id="outing-state" style="font-size:13px;color:var(--dim);margin-top:3px">正在读取视觉入口…</div>
+              <div class="k" data-i18n="primary.hub.outing"></div>
+              <div id="outing-state" style="font-size:13px;color:var(--dim);margin-top:3px" data-i18n="primary.hub.reading_camera"></div>
             </div>
-            <button id="outing-btn" style="background:rgba(255,150,60,.16);border:1px solid rgba(255,170,90,.5);color:#ffd7b0;border-radius:12px;padding:10px 18px;font-size:14px;cursor:pointer">带TA出门</button>
+            <button id="outing-btn" style="background:rgba(255,150,60,.16);border:1px solid rgba(255,170,90,.5);color:#ffd7b0;border-radius:12px;padding:10px 18px;font-size:14px;cursor:pointer" data-i18n="primary.hub.outing"></button>
           </div>
         </div>
         <div class="grid apps" id="apps"></div>
@@ -133,51 +134,53 @@
     <section class="view" id="v-gallery">
       <div class="wrap">
         <div class="row" style="margin-bottom:12px">
-          <span class="chip" id="artcount">画廊</span>
+          <span class="chip" id="artcount" data-i18n="primary.hub.gallery"></span>
         </div>
         <div class="grid gallery" id="gallery"></div>
-        <div class="empty" id="artempty" hidden>还没有画</div>
+        <div class="empty" id="artempty" hidden data-i18n="primary.hub.no_art"></div>
       </div>
     </section>
   </main>
 
   <div id="applayer" hidden style="position:fixed;inset:0;z-index:50;background:#070d18;display:flex;flex-direction:column">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)">
-      <button id="appback" style="background:rgba(110,160,255,.12);border:1px solid rgba(130,170,255,.25);color:var(--txt);border-radius:10px;padding:6px 12px;cursor:pointer">← 返回</button>
+      <button id="appback" style="background:rgba(110,160,255,.12);border:1px solid rgba(130,170,255,.25);color:var(--txt);border-radius:10px;padding:6px 12px;cursor:pointer" data-i18n="primary.hub.back"></button>
       <b id="apptitle" style="font-size:14px"></b>
     </div>
     <iframe id="appframe" style="flex:1;width:100%;border:0;background:#0b1220" allow="camera; microphone; display-capture; fullscreen"></iframe>
   </div>
 </div>
 
+<script src="/i18n.js"></script>
 <script>
+const I18N = window.LysmorI18n;
+const t = I18N.t;
 const host = location.hostname || '127.0.0.1';
 const VIDEO_TOK = '__VIDEO_TOK__';
 
 // 所有网页入口（端口 + 名字 + 说明）
 const APPS = [
-  {t:'她 · 此刻',    d:'生命 + 脑内 · 星图聚成伴侣', p:8009, path:'/she'},
-  {t:'大平层 3D',   d:'她住的房子 · 三维漫游', p:8007, path:'/3d'},
-  {t:'大平层 2D',   d:'俯视平面图',            p:8007, path:'/2d'},
-  {t:'生命状态',    d:'完整的生理/情绪面板',   p:8005, path:'/'},
-  {t:'脑内',        d:'记忆/思绪可视化',       p:8006, path:'/'},
-  {t:'简笔画',      d:'草稿 + 上色',           p:8002, path:'/'},
-  {t:'网页聊天',    d:'文字/语音/图片',        p:8001, path:'/'},
-  {t:'她的日记',    d:'她写的日记和感受',     p:8003, path:'/her-notes', tok:VIDEO_TOK},
-  {t:'陪玩',        d:'她坐旁边看屏幕',       p:8003, path:'/playalong', tok:VIDEO_TOK},
-  {t:'视频通话',    d:'Live2D + 摄像头',       p:8003, path:'/', tok:VIDEO_TOK},
-  {t:'QQ 扫码',     d:'QQ 掉线时扫码登录',     p:8008, path:'/'},
-  {t:'控制台',      d:'AstrBot 管理面板',      p:8012, path:'/'},
+  {t:'primary.hub.app_now',    d:'primary.hub.app_now_description', p:8009, path:'/she'},
+  {t:'primary.hub.app_house3d',   d:'primary.hub.app_house3d_description', p:8007, path:'/3d'},
+  {t:'primary.hub.app_house2d',   d:'primary.hub.app_house2d_description',            p:8007, path:'/2d'},
+  {t:'primary.hub.app_life',    d:'primary.hub.app_life_description',   p:8005, path:'/'},
+  {t:'primary.hub.app_brain',        d:'primary.hub.app_brain_description',       p:8006, path:'/'},
+  {t:'primary.hub.app_doodle',      d:'primary.hub.app_doodle_description',           p:8002, path:'/'},
+  {t:'primary.hub.app_chat',    d:'primary.hub.app_chat_description',        p:8001, path:'/'},
+  {t:'primary.hub.app_diary',    d:'primary.hub.app_diary_description',     p:8003, path:'/her-notes', tok:VIDEO_TOK},
+  {t:'primary.hub.app_play',        d:'primary.hub.app_play_description',       p:8003, path:'/playalong', tok:VIDEO_TOK},
+  {t:'primary.hub.app_video',    d:'primary.hub.app_video_description',       p:8003, path:'/', tok:VIDEO_TOK},
+  {t:'primary.hub.app_qq',     d:'primary.hub.app_qq_description',     p:8008, path:'/'},
+  {t:'primary.hub.app_console',      d:'primary.hub.app_console_description',      p:8012, path:'/'},
 ];
 
 function renderApps(){
   const g = document.getElementById('apps');
-  if (g.dataset.done) return;
-  g.dataset.done = '1';
+  g.replaceChildren();
   for (const a of APPS){
     const c = el('div','appcard');
-    c.appendChild(el('div','t', a.t));
-    c.appendChild(el('div','d', a.d + ' · ' + a.p));
+    c.appendChild(el('div','t', t(a.t)));
+    c.appendChild(el('div','d', t(a.d) + ' · ' + a.p));
     c.onclick = ()=> openApp(a);
     g.appendChild(c);
   }
@@ -186,8 +189,10 @@ function renderApps(){
 function openApp(a){
   const layer = document.getElementById('applayer');
   const frame = document.getElementById('appframe');
-  document.getElementById('apptitle').textContent = a.t;
+  document.getElementById('apptitle').dataset.i18n = a.t;
+  document.getElementById('apptitle').textContent = t(a.t);
   let url = `http://${host}:${a.p}${a.path||'/'}`;
+  url += (url.includes('?')?'&':'?') + 'lang=' + encodeURIComponent(I18N.language());
   if (a.tok) url += (url.includes('?')?'&':'?') + 't=' + encodeURIComponent(a.tok);
   frame.src = url;
   layer.hidden = false;
@@ -206,8 +211,8 @@ function activate(v, push){
   current = v;
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on', x.dataset.v===v));
   document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on', x.id==='v-'+v));
-  if (v==='chat') loadFrame('fr-chat', `http://${host}:8001/`);
-  if (v==='call') loadFrame('fr-call', `http://${host}:8003/?t=${encodeURIComponent(VIDEO_TOK)}`);
+  if (v==='chat') loadFrame('fr-chat', `http://${host}:8001/?lang=${encodeURIComponent(I18N.language())}`);
+  if (v==='call') loadFrame('fr-call', `http://${host}:8003/?t=${encodeURIComponent(VIDEO_TOK)}&lang=${encodeURIComponent(I18N.language())}`);
   if (v==='life') refreshStatus();
   if (v==='gallery') refreshArt();
   if (v==='all') renderApps();
@@ -226,18 +231,18 @@ function loadFrame(id, src){
 
 // ---------- 状态 ----------
 const LABELS = {
-  emotion_level:'情绪', energy:'精力', hunger:'饥饿', thirst:'口渴', asleep:'睡眠',
-  adenosine:'腺苷', cortisol:'皮质醇', valence:'效价', happiness:'幸福', sadness:'难过',
-  lymph_edema:'淋巴水肿', lymph_tenderness:'淋巴触痛', lymph_flow:'淋巴回流',
-  lymph_capacity:'淋巴清除', cycle_phase:'周期', cycle_day:'周期天',
-  activity:'活动', sick_recovery:'康复'
+  emotion_level:'primary.hub.label_emotion_level', energy:'primary.hub.label_energy', hunger:'primary.hub.label_hunger', thirst:'primary.hub.label_thirst', asleep:'primary.hub.label_asleep',
+  adenosine:'primary.hub.label_adenosine', cortisol:'primary.hub.label_cortisol', valence:'primary.hub.label_valence', happiness:'primary.hub.label_happiness', sadness:'primary.hub.label_sadness',
+  lymph_edema:'primary.hub.label_lymph_edema', lymph_tenderness:'primary.hub.label_lymph_tenderness', lymph_flow:'primary.hub.label_lymph_flow',
+  lymph_capacity:'primary.hub.label_lymph_capacity', cycle_phase:'primary.hub.label_cycle_phase', cycle_day:'primary.hub.label_cycle_day',
+  activity:'primary.hub.label_activity', sick_recovery:'primary.hub.label_sick_recovery'
 };
-const CYCLE = {follicular:'卵泡期', ovulation:'排卵期', luteal:'黄体期',
-               premenstrual:'经前', menstrual:'经期'};
+const CYCLE = {follicular:'primary.hub.cycle_follicular', ovulation:'primary.hub.cycle_ovulation', luteal:'primary.hub.cycle_luteal',
+               premenstrual:'primary.hub.cycle_premenstrual', menstrual:'primary.hub.cycle_menstrual'};
 function fmt(k, v){
   if (v == null) return '—';
-  if (k === 'cycle_phase') return CYCLE[v] || v;
-  if (k === 'asleep') return v ? '睡着' : '醒着';
+  if (k === 'cycle_phase') return CYCLE[v] ? t(CYCLE[v]) : v;
+  if (k === 'asleep') return v ? t('primary.hub.asleep') : t('primary.hub.awake');
   if (k === 'activity') return v || '—';
   if (typeof v === 'number') return (Math.abs(v) <= 1 ? v.toFixed(2) : String(v));
   return String(v);
@@ -255,12 +260,13 @@ async function refreshStatus(){
     const ok = (j.services||[]).filter(s=>s.ok).length, total=(j.services||[]).length;
     document.getElementById('dot').className = 'dot ' + (ok===total?'ok':'bad');
     document.getElementById('mood').textContent =
-      `${her.emotion_level||'—'} · 精力 ${fmt('energy',her.energy)} · 记忆 ${j.memory?.documents ?? '—'} 条`;
-    document.getElementById('now').textContent = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+      t('primary.hub.summary', {mood: her.emotion_level||'—', energy: fmt('energy',her.energy), count: j.memory?.documents ?? '—'});
+    document.getElementById('now').textContent = new Date().toLocaleTimeString(I18N.language(),{hour:'2-digit',minute:'2-digit'});
 
     // 服务
     const sv = document.getElementById('services');
-    sv.innerHTML = '<div class="k" style="margin-bottom:8px">服务</div>';
+    sv.innerHTML = '';
+    sv.appendChild(el('div', 'k', t('primary.hub.services')));
     const row = el('div','row');
     for (const s of j.services||[]){
       const c = el('span','chip '+(s.ok?'ok':'bad'));
@@ -276,20 +282,20 @@ async function refreshStatus(){
                   'lymph_edema','lymph_tenderness','cycle_phase'];
     if (j.self && j.self.summary){
       const c = el('div','card');
-      c.appendChild(el('div','k','自我（来自经历）'));
+      c.appendChild(el('div','k',t('primary.hub.self')));
       c.appendChild(el('div','v', j.self.narrative || j.self.summary));
       cards.appendChild(c);
     }
     for (const k of keys){
       const c = el('div','card');
-      c.appendChild(el('div','k', LABELS[k]||k));
+      c.appendChild(el('div','k', LABELS[k] ? t(LABELS[k]) : k));
       c.appendChild(el('div','v', fmt(k, her[k])));
       if (typeof her[k] === 'number' && k!=='cycle_day' && k!=='cycle_phase') c.appendChild(bar(her[k]));
       cards.appendChild(c);
     }
   }catch(e){
     document.getElementById('dot').className='dot bad';
-    document.getElementById('mood').textContent='后端没起来';
+    document.getElementById('mood').textContent=t('primary.hub.backend_down');
   }
 }
 
@@ -299,7 +305,7 @@ async function refreshArt(){
     const r = await fetch('/api/art', {cache:'no-store'});
     const j = await r.json();
     const items = j.items || [];
-    document.getElementById('artcount').textContent = `共 ${items.length} 幅`;
+    document.getElementById('artcount').textContent = t('primary.art_count', {count: items.length});
     document.getElementById('artempty').hidden = items.length > 0;
     const g = document.getElementById('gallery');
     g.innerHTML = '';
@@ -310,7 +316,7 @@ async function refreshArt(){
       const im = el('img'); im.loading='lazy'; im.src = '/artimg?name='+encodeURIComponent(name);
       im.onclick = ()=> window.open(im.src,'_blank');
       card.appendChild(im);
-      const cap = el('div','cap', (it.time||'').slice(0,4)+'-'+(it.time||'').slice(4,6)+'-'+(it.time||'').slice(6,8)+' '+((it.kind==='art')?'画':'简笔画'));
+      const cap = el('div','cap', (it.time||'').slice(0,4)+'-'+(it.time||'').slice(4,6)+'-'+(it.time||'').slice(6,8)+' '+((it.kind==='art')?t('primary.hub.paint'):t('primary.hub.app_doodle')));
       card.appendChild(cap);
       g.appendChild(card);
     }
@@ -329,17 +335,17 @@ async function refreshOps(){
       c.appendChild(el('div','v',v)); if(s) c.appendChild(el('div','s',s));
       cards.appendChild(c);
     };
-    add('今日轮数', j.turns);
-    add('平均召回延迟', j.avg_latency_ms + ' ms');
-    add('平均注入条数', j.avg_selected);
-    add('平均注入字数', j.avg_chars);
-    add('记忆总量', (j.memory && j.memory.documents) ?? '—');
-    for (const [k,v] of Object.entries(j.by_src||{})) add('来源 ' + k, v);
+    add(t('primary.hub.turns'), j.turns);
+    add(t('primary.hub.latency'), j.avg_latency_ms + ' ms');
+    add(t('primary.hub.selected'), j.avg_selected);
+    add(t('primary.hub.chars'), j.avg_chars);
+    add(t('primary.hub.total'), (j.memory && j.memory.documents) ?? '—');
+    for (const [k,v] of Object.entries(j.by_src||{})) add(t('primary.hub.source', {source: k}), v);
     const rec = document.getElementById('ops-recent');
     rec.innerHTML = '';
     for (const e of j.recent||[]){
-      const t = new Date((e.ts||0)*1000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-      rec.appendChild(el('div', '', `${t} · ${e.src||''} · 候选${e.candidates??'-'} → 注入${e.selected??'-'} · ${e.latency_ms??'-'}ms · ${e.chars??'-'}字 · ${e.emotion||''}`));
+      const t = new Date((e.ts||0)*1000).toLocaleTimeString(I18N.language(),{hour:'2-digit',minute:'2-digit'});
+      rec.appendChild(el('div', '', I18N.t('primary.hub.recent', {time: t, source: e.src||'', candidates: e.candidates??'-', selected: e.selected??'-', latency: e.latency_ms??'-', chars: e.chars??'-', mood: e.emotion||''})));
     }
   }catch(e){}
 }
@@ -359,17 +365,17 @@ function paintOuting(){
   const s = document.getElementById('outing-state');
   if (!b || !s) return;
   if (outingOn){
-    b.textContent = '带TA回家';
+    b.textContent = t('primary.hub.home');
     b.style.background = 'rgba(90,220,160,.16)';
     b.style.borderColor = 'rgba(90,220,160,.55)';
     b.style.color = '#b8ffd9';
-    s.textContent = '已出门 · 她的眼睛是 PICO 眼镜；电脑摄像头已让位';
+    s.textContent = t('primary.hub.outside');
   }else{
-    b.textContent = '带TA出门';
+    b.textContent = t('primary.hub.outing');
     b.style.background = 'rgba(255,150,60,.16)';
     b.style.borderColor = 'rgba(255,170,90,.5)';
     b.style.color = '#ffd7b0';
-    s.textContent = '在家 · 她的眼睛是电脑摄像头；眼镜识图已让位';
+    s.textContent = t('primary.hub.inside');
   }
 }
 document.getElementById('outing-btn').onclick = async ()=>{
@@ -384,10 +390,16 @@ document.getElementById('outing-btn').onclick = async ()=>{
     outingOn = (j.source === 'pico');
     paintOuting();
   }catch(e){
-    document.getElementById('outing-state').textContent = '切换失败：' + (e.message||e);
+    document.getElementById('outing-state').textContent = t('primary.hub.switch_failed', {error: e.message||e});
   }finally{ b.disabled = false; }
 };
 refreshOuting();
+
+window.addEventListener('lysmor:languagechange', ()=>{
+  renderApps(); refreshStatus(); paintOuting();
+  if(current==='ops') refreshOps();
+  if(current==='gallery') refreshArt();
+});
 
 // ---------- 启动 ----------
 { const v = location.hash.slice(1); activate(['life','all','ops'].includes(v) ? v : 'all', false); }
