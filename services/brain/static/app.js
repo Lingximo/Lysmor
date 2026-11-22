@@ -2,6 +2,10 @@
 (function () {
   "use strict";
 
+  var i18n = window.LysmorI18n;
+  var t = i18n.t;
+  i18n.applyText(document);
+
   var token = new URLSearchParams(location.search).get("t") || "";
   var canvas = document.getElementById("sky");
   var ctx = canvas.getContext("2d");
@@ -71,7 +75,7 @@
       if (!p) { return; }
       var s = toScreen(p);
       var r = (2.2 + n.importance * 4) * view.scale;
-      var color = topicColor(n.topic || "其他");
+      var color = topicColor(n.topic || "");
       var glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 3.5);
       glow.addColorStop(0, color + "55");
       glow.addColorStop(1, "transparent");
@@ -115,13 +119,17 @@
     topics.forEach(function (t) {
       var item = document.createElement("span");
       item.className = "item";
-      item.innerHTML = '<span class="dot" style="background:' + topicColor(t) + '"></span>' + t;
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = topicColor(t || "");
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(t || i18n.t("services.brain.other")));
       legendEl.appendChild(item);
     });
   }
 
   function load() {
-    fetch("/api/memories", { headers: { "X-Gate-Token": token } })
+    fetch("/api/memories", { headers: { "X-Gate-Token": token, "Accept-Language": i18n.language() } })
       .then(function (r) {
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
@@ -131,11 +139,11 @@
         links = d.links || [];
         layout();
         renderLegend();
-        countEl.textContent = nodes.length + " 条记忆";
+        countEl.textContent = t("services.brain.count", { count: nodes.length });
         draw();
       })
       .catch(function (e) {
-        countEl.textContent = "加载失败：" + e.message;
+        countEl.textContent = t("services.loadFailed", { error: e.message });
       });
   }
 
@@ -166,8 +174,12 @@
     draw();
     if (n) {
       tip.hidden = false;
-      tip.innerHTML = n.summary + '<div class="topic">' + (n.topic || "其他") +
-        " · 重要度 " + Math.round((n.importance || 0) * 100) + "% · " + (n.t || "") + "</div>";
+      tip.textContent = n.summary || "";
+      var topic = document.createElement("div");
+      topic.className = "topic";
+      topic.textContent = (n.topic || t("services.brain.other")) + " · " +
+        t("services.brain.importance", { value: Math.round((n.importance || 0) * 100) }) + " · " + (n.t || "");
+      tip.appendChild(topic);
       tip.style.left = Math.min(e.clientX + 14, innerWidth - 280) + "px";
       tip.style.top = Math.min(e.clientY + 14, innerHeight - 90) + "px";
     } else {
@@ -175,6 +187,12 @@
     }
   });
 
+  addEventListener("lysmor:languagechange", function () {
+    countEl.textContent = t("services.brain.count", { count: nodes.length });
+    renderLegend();
+    tip.hidden = true;
+    draw();
+  });
   addEventListener("resize", resize);
   resize();
   load();

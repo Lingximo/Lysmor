@@ -22,6 +22,9 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from i18n import send_browser_asset, language_from_header, t
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, "data")
 CONFIG = {"gate_token": "", "port": 8009}   # 注意：别和网页聊天(8001)撞端口
@@ -37,7 +40,7 @@ def load_config(path):
                     if k in data:
                         CONFIG[k] = data[k]
         except Exception as exc:  # noqa: BLE001
-            print("! 读配置失败：%s" % exc)
+            print(t("services.cli.configReadFailed", error=exc))
 
 
 def load_json(path, default):
@@ -114,7 +117,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(403)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
-        self.wfile.write(json.dumps({"error": "口令不对"}, ensure_ascii=False).encode("utf-8"))
+        self.wfile.write(json.dumps({"error": t("services.api.invalidToken", locale=language_from_header(self.headers.get("Accept-Language")))}, ensure_ascii=False).encode("utf-8"))
 
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -126,6 +129,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if send_browser_asset(self, parsed.path):
+            return
         # 数据接口挂门禁；静态壳文件公开（浏览器加载资源时带不上口令）
         if parsed.path == "/api/overview":
             if not self._authed():
@@ -164,7 +169,7 @@ def main():
     ap.add_argument("--token", default=None)
     ap.add_argument("--config", default=None)
     ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--services", default=None, help="服务注册表路径（默认 data/services.json）")
+    ap.add_argument("--services", default=None, help=t("services.cli.registryHelp"))
     args = ap.parse_args()
 
     global SERVICES_PATH
@@ -175,11 +180,11 @@ def main():
         CONFIG["gate_token"] = args.token
     if not CONFIG["gate_token"]:
         CONFIG["gate_token"] = secrets.token_urlsafe(12)
-        print("开发模式：本次口令 t=%s" % CONFIG["gate_token"])
+        print(t("services.cli.developmentToken", token=CONFIG["gate_token"]))
 
     srv = ThreadingHTTPServer((args.host, port), Handler)
-    print("控制台已启动：http://%s:%d/?t=%s" % (args.host, port, CONFIG["gate_token"]))
-    print("服务注册表：%s" % (SERVICES_PATH or os.path.join(DATA, "services.json")))
+    print(t("services.cli.started", service=t("services.console.title"), host=args.host, port=port, token=CONFIG["gate_token"]))
+    print(t("services.cli.registryPath", path=SERVICES_PATH or os.path.join(DATA, "services.json")))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

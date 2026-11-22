@@ -3,19 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>大平层</title>
+<title data-i18n="services.house.title">大平层</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <select data-language-select style="position:fixed;right:12px;bottom:12px;z-index:1000;background:#101a2b;color:#d8e4f4;border:1px solid #486078;border-radius:5px;padding:4px"></select>
   <canvas id="room"></canvas>
 
   <div id="hud">
-    <span id="title">大平层</span>
-    <span id="hint">拖拽旋转 · 滚轮缩放 · 点击家具看说明</span>
+    <span id="title" data-i18n="services.house.title">大平层</span>
+    <span id="hint" data-i18n="services.house.hint">拖拽旋转 · 滚轮缩放 · 点击家具看说明</span>
   </div>
 
   <div id="tip" hidden></div>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -3,21 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>记忆星图</title>
+<title data-i18n="services.brain.title">记忆星图</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <select data-language-select style="position:fixed;right:12px;bottom:12px;z-index:1000;background:#101a2b;color:#d8e4f4;border:1px solid #486078;border-radius:5px;padding:4px"></select>
   <canvas id="sky"></canvas>
 
   <div id="hud">
-    <span id="count">0 条记忆</span>
-    <span id="hint">滚轮缩放 · 拖拽平移 · 悬停看摘要</span>
+    <span id="count" data-i18n="services.brain.emptyCount">0 条记忆</span>
+    <span id="hint" data-i18n="services.brain.hint">滚轮缩放 · 拖拽平移 · 悬停看摘要</span>
   </div>
 
   <div id="legend"></div>
 
   <div id="tip" hidden></div>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

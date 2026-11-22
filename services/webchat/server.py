@@ -23,6 +23,9 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from i18n import send_browser_asset, language_from_header, t
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(BASE, "static")
 
@@ -57,17 +60,17 @@ def load_config(path):
                     if k in data:
                         CONFIG[k] = data[k]
         except Exception as exc:  # noqa: BLE001
-            print("! 读配置失败：%s" % exc)
+            print(t("services.cli.configReadFailed", error=exc))
 
 
-def reply(text):
+def reply(text, locale=None):
     """接你自己的 LLM 的地方。
 
     示例：没有接 LLM 时的占位行为（echo）。接入后替换成：
         - 本地：POST http://127.0.0.1:11434/api/chat （Ollama）
         - 云端：按服务商文档调用，把 CONFIG["llm"] 里的 key 带上
     """
-    return "（占位回复）你说的是：" + text
+    return t("services.api.placeholderReply", locale=locale, text=text)
 
 
 def record(role, text):
@@ -92,7 +95,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(403)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
-        self.wfile.write(json.dumps({"error": "口令不对"}, ensure_ascii=False).encode("utf-8"))
+        self.wfile.write(json.dumps({"error": t("services.api.invalidToken", locale=language_from_header(self.headers.get("Accept-Language")))}, ensure_ascii=False).encode("utf-8"))
 
     def _json(self, obj, code=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -104,6 +107,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if send_browser_asset(self, parsed.path):
+            return
         if parsed.path == "/api/history":
             if not self._authed():
                 return self._deny()
@@ -136,14 +141,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = json.loads(raw.decode("utf-8"))
         except Exception:  # noqa: BLE001
-            return self._json({"error": "请求不是合法 JSON"}, 400)
+            return self._json({"error": t("services.api.invalidJson", locale=language_from_header(self.headers.get("Accept-Language")))}, 400)
         text = str(data.get("text") or "").strip()
         if not text:
-            return self._json({"error": "text 不能为空"}, 400)
+            return self._json({"error": t("services.api.emptyText", locale=language_from_header(self.headers.get("Accept-Language")))}, 400)
         if len(text) > 4000:
-            return self._json({"error": "太长了"}, 400)
+            return self._json({"error": t("services.api.textTooLong", locale=language_from_header(self.headers.get("Accept-Language")))}, 400)
         record("user", text)
-        ans = reply(text)
+        ans = reply(text, locale=language_from_header(self.headers.get("Accept-Language")))
         record("bot", ans)
         self._json({"reply": ans})
 
@@ -158,7 +163,7 @@ def main():
     ap.add_argument("--port", type=int, default=None)
     ap.add_argument("--token", default=None)
     ap.add_argument("--config", default=None)
-    ap.add_argument("--host", default="127.0.0.1", help="默认只监听本机；开局域网前先设口令并读 SECURITY.md")
+    ap.add_argument("--host", default="127.0.0.1", help=t("services.cli.hostHelp"))
     args = ap.parse_args()
 
     load_config(args.config)
@@ -167,11 +172,11 @@ def main():
         CONFIG["gate_token"] = args.token
     if not CONFIG["gate_token"]:
         CONFIG["gate_token"] = secrets.token_urlsafe(12)
-        print("开发模式：本次口令 t=%s" % CONFIG["gate_token"])
+        print(t("services.cli.developmentToken", token=CONFIG["gate_token"]))
 
     srv = ThreadingHTTPServer((args.host, port), Handler)
-    print("网页聊天已启动：http://%s:%d/  （口令 t=%s）" % (args.host, port, CONFIG["gate_token"]))
-    print("接 LLM：改 reply()（见文件顶部说明）。Ctrl+C 退出。")
+    print(t("services.cli.started", service=t("services.webchat.title"), host=args.host, port=port, token=CONFIG["gate_token"]))
+    print(t("services.cli.llmHelp"))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>聊天</title>
+<title data-i18n="services.webchat.title">聊天</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <select data-language-select style="position:fixed;right:12px;bottom:12px;z-index:1000;background:#101a2b;color:#d8e4f4;border:1px solid #486078;border-radius:5px;padding:4px"></select>
   <header id="status-bar">
     <span id="status-dot"></span>
-    <span id="status-text">连接中…</span>
+    <span id="status-text" data-i18n="services.webchat.connecting">连接中…</span>
   </header>
 
   <main id="chat-flow" aria-live="polite"></main>
 
   <footer id="input-area">
-    <textarea id="input" rows="1" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
-    <button id="send">发送</button>
+    <textarea id="input" rows="1" data-i18n-placeholder="services.webchat.placeholder" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+    <button id="send" data-i18n="services.webchat.send">发送</button>
   </footer>
 
+<script src="/i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
