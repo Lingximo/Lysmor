@@ -16,18 +16,22 @@ from astrbot.api.message_components import Plain
 from astrbot.api.star import Context, Star
 from astrbot.core.config.astrbot_config import AstrBotConfig
 
+from pathlib import Path
+import sys
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 PY = (r"C:\你的用户\.astrbot_launcher\instances"
       r"\<BOT_INSTANCE>\venv\Scripts\python.exe")
 TOOL = r"D:\你的数据目录\tools\memory_correct.py"
 
 # 纠正 关键词 => 正确内容   /   纠正 #34 => 正确内容
 CMD_RE = re.compile(r"^[/／]?(?:纠正|改记忆|更正记忆)\s*(.+)$", re.S)
-
-USAGE = (
-    "用法：纠正 <关键词> => <正确的内容>\n"
-    "例：纠正 牛肉面 => 中午吃的是黄焖鸡\n"
-    "不知道是哪条就先发「纠正 牛肉面」，我列出来给你挑（带 id）。"
-)
 
 
 class CompanionMemFix(Star):
@@ -36,7 +40,7 @@ class CompanionMemFix(Star):
         self.conf = config or {}
 
     async def initialize(self):
-        logger.info("[记忆纠错] 已启用：纠正 <关键词> => <正确内容>")
+        logger.info(t("memory.fix.enabled"))
 
     async def _run_tool(self, *args):
         """调 tools/memory_correct.py，拿它吐的 JSON。"""
@@ -67,10 +71,14 @@ class CompanionMemFix(Star):
         m = CMD_RE.match(raw)
         if not m:
             return
+        owner = str(self.conf.get("owner_session") or "").strip()
+        if not event.is_admin() and not (owner and event.unified_msg_origin == owner):
+            event.stop_event()
+            return
         body = (m.group(1) or "").strip()
         if not body:
             event.stop_event()
-            await self._reply(event, USAGE)
+            await self._reply(event, t("memory.fix.usage"))
             return
 
         # 统一分隔符：=> / ＝> / →
@@ -82,7 +90,7 @@ class CompanionMemFix(Star):
 
         if not left:
             event.stop_event()
-            await self._reply(event, USAGE)
+            await self._reply(event, t("memory.fix.usage"))
             return
 
         # 1) 只有关键词：列候选
@@ -90,13 +98,13 @@ class CompanionMemFix(Star):
             data, raw_out = await self._run_tool("--find", left, "--json")
             if not data or not data.get("items"):
                 event.stop_event()
-                await self._reply(event, f"没找到含「{left}」的记忆。\n{USAGE}")
+                await self._reply(event, t("memory.fix.not_found", keyword=left) + "\n" + t("memory.fix.usage"))
                 return
             items = data["items"]
-            lines = [f"含「{left}」的记忆有 {len(items)} 条："]
+            lines = [t("memory.fix.found", keyword=left, count=len(items))]
             for it in items[:8]:
                 lines.append(f"  #{it['id']}  {it['when']}  {it['text'][:40]}")
-            lines.append("确定是哪条就发：纠正 #编号 => 正确的内容")
+            lines.append(t("memory.fix.choose"))
             event.stop_event()
             await self._reply(event, "\n".join(lines))
             return
@@ -112,12 +120,11 @@ class CompanionMemFix(Star):
             event.stop_event()
             if not data or not data.get("ok"):
                 err = (data or {}).get("error") or raw_out[-200:]
-                await self._reply(event, f"改失败了：{err}")
+                await self._reply(event, t("memory.fix.failed", error=err))
                 return
             await self._reply(
                 event,
-                f"改好了 #{data.get('old_id')} → #{data.get('new_id')}：{right}\n"
-                "旧的那段我留着，想查随时能查。",
+                t("memory.fix.done", old_id=data.get("old_id"), new_id=data.get("new_id"), text=right),
             )
             return
 
@@ -126,13 +133,13 @@ class CompanionMemFix(Star):
         items = (data or {}).get("items") or []
         if not items:
             event.stop_event()
-            await self._reply(event, f"没找到含「{left}」的记忆。")
+            await self._reply(event, t("memory.fix.not_found", keyword=left))
             return
         if len(items) > 1:
-            lines = [f"「{left}」能对上 {len(items)} 条，我不瞎猜："]
+            lines = [t("memory.fix.ambiguous", keyword=left, count=len(items))]
             for it in items[:8]:
                 lines.append(f"  #{it['id']}  {it['when']}  {it['text'][:40]}")
-            lines.append("看准了发：纠正 #编号 => 正确的内容")
+            lines.append(t("memory.fix.choose"))
             event.stop_event()
             await self._reply(event, "\n".join(lines))
             return
@@ -145,10 +152,9 @@ class CompanionMemFix(Star):
         event.stop_event()
         if not data or not data.get("ok"):
             err = (data or {}).get("error") or raw_out[-200:]
-            await self._reply(event, f"改失败了：{err}")
+            await self._reply(event, t("memory.fix.failed", error=err))
             return
         await self._reply(
             event,
-            f"改好了 #{data.get('old_id')} → #{data.get('new_id')}：{right}\n"
-            "旧的那段我留着，想查随时能查。",
+            t("memory.fix.done", old_id=data.get("old_id"), new_id=data.get("new_id"), text=right),
         )

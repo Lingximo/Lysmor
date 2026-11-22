@@ -30,6 +30,15 @@ import sys
 import time
 from collections import Counter
 
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 DB = r"D:\你的数据目录\livingmemory\livingmemory.db"
 BACKUP_DIR = r"D:\你的数据目录\livingmemory\backups"
 
@@ -101,16 +110,16 @@ def main():
         if len(samples[kind]) < args.limit:
             samples[kind].append((doc_id, round(conf, 2), (text or "")[:70]))
 
-    print("待标注: %d 条" % len(rows))
+    print(t("memory.pending", count=len(rows)))
     for k in ("fact", "preference", "inference"):
-        print("  %-11s %3d 条" % (k, counts[k]))
+        print(t("memory.claim_count", kind=k, count=counts[k]))
     for k in ("inference", "preference"):
-        print("\n--- %s 抽样 ---" % k)
+        print("\n" + t("memory.sample", kind=k))
         for doc_id, conf, text in samples[k]:
             print("  #%-4d conf=%.2f  %s" % (doc_id, conf, text))
 
     if args.dry_run or not args.apply:
-        print("\n（只演算，没写库。要写加 --apply）")
+        print("\n" + t("memory.dry_run"))
         return 0
 
     # 写库前先备份
@@ -123,12 +132,24 @@ def main():
     finally:
         dst.close()
         src.close()
-    print("已备份: %s" % snap)
+    print(t("memory.backed_up", path=snap))
 
     con = sqlite3.connect(DB, timeout=10)
     try:
+        con.execute("begin immediate")
         n = 0
-        for doc_id, text, m in rows:
+        for doc_id, _, _ in rows:
+            current = con.execute(
+                "select text, metadata from documents where id=?", (doc_id,)
+            ).fetchone()
+            if current is None:
+                continue
+            text, metadata = current
+            m = json.loads(metadata or "{}")
+            if not isinstance(m, dict):
+                raise ValueError(t("memory.metadata_object"))
+            if m.get("claim_type"):
+                continue
             kind, conf = classify(text)
             m["claim_type"] = kind
             m["confidence"] = round(conf, 2)
@@ -137,7 +158,7 @@ def main():
         con.commit()
     finally:
         con.close()
-    print("已写入 %d 条" % n)
+    print(t("memory.written", count=n))
     return 0
 
 

@@ -15,9 +15,9 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 import json
 import os
-import shutil
 import sqlite3
 import time
 import sys
@@ -27,6 +27,15 @@ try:
     from memory_ledger import retire_many as _retire_ledger
 except Exception:  # 账本工具不在时不阻断去重
     _retire_ledger = None
+
+from pathlib import Path
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
 
 PLUGIN_DATA = (r"C:\你的用户\.astrbot_launcher\instances"
                r"\<BOT_INSTANCE>\core\data\plugin_data"
@@ -61,8 +70,8 @@ def report(db):
     active = cur.execute(
         "select count(*) from documents where coalesce(json_extract(metadata,'$.status'),'active')='active'"
     ).fetchone()[0]
-    print("记忆总数 %d（active %d）" % (total, active))
-    print("重复文本 %d 组，多余 %d 条" % (dup_groups, dup_rows))
+    print(t("memory.total", total=total, active=active))
+    print(t("memory.duplicates", groups=dup_groups, rows=dup_rows))
     rows = cur.execute(
         "select count(*), substr(text,1,36) from documents group by text "
         "having count(*)>1 order by count(*) desc limit 5"
@@ -76,18 +85,29 @@ def report(db):
 def apply(db, graph_db):
     os.makedirs(LOG_DIR, exist_ok=True)
     bak = os.path.join(LOG_DIR, "backup-memory-%s.db" % time.strftime("%Y%m%d-%H%M%S"))
-    shutil.copy2(db, bak)
-    print("已备份:", bak)
-
     con = sqlite3.connect(db, timeout=30)
+    try:
+        with closing(sqlite3.connect(bak)) as destination:
+            con.backup(destination)
+            if destination.execute("pragma quick_check").fetchone()[0] != "ok":
+                raise RuntimeError(t("memory.backup_invalid"))
+    except Exception:
+        con.close()
+        raise
+    print(t("memory.backed_up", path=bak))
+
     cur = con.cursor()
+    cur.execute("begin immediate")
     groups = cur.execute(
-        "select text, group_concat(id) from documents group by text having count(*)>1"
+        "select text from documents group by text having count(*)>1"
     ).fetchall()
     removed = 0
     ids_to_drop = []
-    for text, ids in groups:
-        id_list = sorted(int(x) for x in str(ids).split(","))
+    for (text,) in groups:
+        id_list = [row[0] for row in cur.execute(
+            "select id from documents where text is ? "
+            "order by created_at is null, created_at, id", (text,)
+        ).fetchall()]
         keep = id_list[0]
         drop = id_list[1:]
         if not drop:
@@ -98,12 +118,12 @@ def apply(db, graph_db):
         try:
             cur.execute(f"delete from documents_fts where rowid in ({q})", drop)
         except Exception as exc:  # noqa: BLE001
-            print("  FTS 删除失败（忽略）:", exc)
+            print(t("memory.fts_failed", error=exc))
         removed += len(drop)
-        print("  保留 #%d，删除 %s：%s" % (keep, drop, (text or "")[:40]))
+        print(t("memory.dedupe_item", keep=keep, drop=drop, text=(text or "")[:40]))
     con.commit()
     con.close()
-    print("主库删除 %d 条" % removed)
+    print(t("memory.removed", count=removed))
     if _retire_ledger is not None and ids_to_drop:
         try:
             n = _retire_ledger(
@@ -111,9 +131,9 @@ def apply(db, graph_db):
                 reason="去重合并（完全相同文本）",
                 by="memory_maintenance",
             )
-            print("账本补登记: %d 条" % n)
+            print(t("memory.ledger_registered", count=n))
         except Exception as exc:  # noqa: BLE001
-            print("账本补登记失败（不影响去重）:", exc)
+            print(t("memory.ledger_failed", error=exc))
 
     if ids_to_drop and os.path.exists(graph_db):
         try:
@@ -125,9 +145,9 @@ def apply(db, graph_db):
             ).rowcount
             g.commit()
             g.close()
-            print("图谱库删除 %d 条" % n)
+            print(t("memory.graph_removed", count=n))
         except Exception as exc:  # noqa: BLE001
-            print("图谱库清理失败（不影响主库）:", exc)
+            print(t("memory.graph_failed", error=exc))
     return removed
 
 
@@ -137,17 +157,17 @@ def main():
     ap.add_argument("--checkpoint", action="store_true")
     args = ap.parse_args()
 
-    print("库：", DB)
-    print("大小 %.1f MB，WAL %.1f MB" % (size(DB), size(DB + "-wal")))
+    print(t("memory.database", path=DB))
+    print(t("memory.sizes", size=f"{size(DB):.1f}", wal="%.1f" % size(DB + "-wal")))
 
     if args.checkpoint or not args.apply:
         before = size(DB + "-wal")
         checkpoint(DB)
-        print("WAL 检查点：%.1f MB → %.1f MB" % (before, size(DB + "-wal")))
+        print(t("memory.checkpoint", before=f"{before:.1f}", after="%.1f" % size(DB + "-wal")))
 
     if not args.apply:
         report(DB)
-        print("\n（只检查。要清理重复请加 --apply，会先备份）")
+        print("\n" + t("memory.check_only"))
         return
 
     apply(DB, GRAPH_DB)

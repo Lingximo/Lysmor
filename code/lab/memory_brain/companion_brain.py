@@ -11,6 +11,16 @@ import sqlite3
 import time
 from collections import defaultdict
 
+from pathlib import Path
+import sys
+
+for _parent in Path(__file__).resolve().parents:
+    if (_parent / "i18n.py").is_file():
+        sys.path.insert(0, str(_parent))
+        break
+sys.path.insert(0, r"D:\你的数据目录")
+from i18n import t
+
 DB = (r"C:\你的用户\.astrbot_launcher\instances\<BOT_INSTANCE>"
       r"\core\data\plugin_data\astrbot_plugin_livingmemory\livingmemory.db")
 STATE_DIR = r"D:\你的数据目录\state"
@@ -70,7 +80,7 @@ def _refresh_cache():
         changed = True
     if changed:
         np.savez_compressed(VEC_CACHE, ids=np.array(ids), vecs=np.stack(mat))
-        print("cache refreshed:", len(ids))
+        print(t("memory.cache_refreshed", count=len(ids)))
 
 
 def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
@@ -78,7 +88,7 @@ def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
     import numpy as np
 
     if not os.path.exists(VEC_CACHE):
-        print("没有向量缓存，先跑 tools\\eval_memory.py")
+        print(t("memory.cache_missing"))
         return 0
     z = np.load(VEC_CACHE, allow_pickle=True)
     ids, mat = z["ids"], z["vecs"]
@@ -100,7 +110,7 @@ def build_links(top_k: int = 3, min_sim: float = 0.55) -> int:
             n += 1
     con.commit()
     con.close()
-    print("links:", n)
+    print(t("memory.links", count=n))
     return n
 
 
@@ -181,32 +191,6 @@ def ppr_expand(seed_ids, limit: int = 8, alpha: float = 0.55, iters: int = 12) -
     mem_edges = _load_mem_graph()
     if not mem_edges:
         return []
-    try:
-        edges = con.execute(
-            "select source_memory_id, target_memory_id from graph_edges where status='active'"
-        ).fetchall()
-        node_map = defaultdict(list)
-        for m, src in con.execute(
-            "select e.source_memory_id, n.node_id from graph_entry_nodes n "
-            "join graph_entries e on e.id = n.entry_id"
-        ):
-            node_map[int(m)].append(int(src))
-    except Exception:
-        con.close()
-        return []
-    con.close()
-
-    mem_edges = defaultdict(set)
-    for a, b in edges:
-        mem_edges[int(a)].add(int(b))
-        mem_edges[int(b)].add(int(a))
-    for m, nodes in node_map.items():
-        for other, onodes in node_map.items():
-            if other != m and set(nodes) & set(onodes):
-                mem_edges[m].add(other)
-
-    if not mem_edges:
-        return []
     # 在记忆-记忆图上做 PPR
     rank = {m: 0.0 for m in mem_edges}
     for s in seeds:
@@ -224,7 +208,7 @@ def ppr_expand(seed_ids, limit: int = 8, alpha: float = 0.55, iters: int = 12) -
                 if x in new:
                     new[x] += share
         rank = new
-    out = [(m, s) for m, s in rank.items() if m not in seeds]
+    out = [(m, s) for m, s in rank.items() if m not in seeds and s > 0]
     out.sort(key=lambda x: -x[1])
     return [m for m, _ in out[:limit]]
 
@@ -364,7 +348,7 @@ def build_self() -> dict:
     }
     with open(SELF_JSON, "w", encoding="utf-8") as f:
         json.dump(self_data, f, ensure_ascii=False, indent=2)
-    print("self:", summary)
+    print(t("memory.self_label", summary=summary))
     return self_data
 
 
