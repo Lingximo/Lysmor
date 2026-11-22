@@ -1,0 +1,14 @@
+{
+  "playalong.title": "Play-along",
+  "playalong.start": "Start play-along",
+  "playalong.stop": "Stop play-along",
+  "playalong.panic": "Emergency stop",
+  "playalong.tip": "During play-along, your desktop pet occasionally looks at your screen, comments on what it sees, and may act on its own. You can stop it here at any time.",
+  "playalong.pets": "Playing together · Desktop pets: {count}",
+  "playalong.overlays": "Playing together · Desktop overlays: {count}",
+  "playalong.state_unavailable": "Cannot read play-along status. Check the connection to the play-along service.",
+  "playalong.request_failed": "Could not confirm the result. Check the current status.",
+  "playalong.done": "Done",
+  "playalong.incomplete": "Some steps did not finish. Check the desktop overlays and screen monitoring.",
+  "playalong.screen_failed": "Play-along was updated, but the screen monitoring status could not be confirmed."
+}

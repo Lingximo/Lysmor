@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>陪玩</title>
+<title data-i18n="playalong.title"></title>
+<script src="/i18n.js"></script>
 <style>
 :root{color-scheme:dark}
 body{margin:0;min-height:100vh;background:linear-gradient(180deg,#070d18,#0b1220 60%,#0a0f1a);
@@ -20,45 +21,81 @@ button:disabled{opacity:.5;cursor:default}
 #log{max-width:560px;width:100%;max-height:160px;overflow:auto;background:rgba(10,18,30,.7);
   border:1px solid rgba(80,110,160,.3);border-radius:12px;padding:10px;font:12px/1.5 Consolas,monospace;color:#9fb3cc;white-space:pre-wrap}
 </style></head><body>
-<h1>陪玩</h1>
-<div id="state"><span id="dot"></span><span id="label">读取中…</span></div>
+<h1 data-i18n="playalong.title"></h1>
+<select data-language-select></select>
+<div id="state" role="status"><span id="dot"></span><span id="label"></span></div>
 <div class="row">
-  <button id="on" class="primary">开始陪玩</button>
-  <button id="off">停下</button>
-  <button id="panic" class="danger">紧急停</button>
+  <button id="on" class="primary" data-i18n="playalong.start"></button>
+  <button id="off" data-i18n="playalong.stop"></button>
+  <button id="panic" class="danger" data-i18n="playalong.panic"></button>
 </div>
-<div id="tip">开着的时候桌宠会出现，隔一会儿瞄一眼屏幕、随口点评，还会自己动手做事；这里也能随时停下。</div>
+<div id="tip" data-i18n="playalong.tip"></div>
 <div id="log"></div>
 <script type="module">
-const $ = (s)=>document.querySelector(s);
-const dot=$('#dot'), label=$('#label'), log=$('#log');
-function say(t){ log.textContent = ('['+new Date().toLocaleTimeString()+'] '+t+'\n'+log.textContent).slice(0,4000); }
-function paint(j){
-  const on = !!(j && j.on);
-  dot.classList.toggle('on', on);
-  if (!on) { label.textContent = '没在陪玩'; return; }
-  const pets = (j.pet_clients || 0), pids = (j.overlay_pids || []).length;
-  if (pets > 0) label.textContent = '陪玩中 · 桌宠 ' + pets + ' 只';
-  else if (pids > 0) label.textContent = '陪玩中 · 小人 ' + pids + ' 个';
-  else label.textContent = '陪玩中';
+const { t, language } = window.LysmorI18n;
+const dot = document.querySelector('#dot'), label = document.querySelector('#label');
+const log = document.querySelector('#log'), entries = [];
+let stateKey = 'common.loading', count = 0, refreshId = 0;
+
+function renderLog() {
+  log.textContent = entries.map(({time, action, result}) =>
+    `[${time.toLocaleTimeString(language())}] ${t(action)} → ${t(result)}`).join('\n');
 }
-async function refresh(){
-  try { const j = await (await fetch('/api/companion/state')).json(); paint(j); }
-  catch(e){ label.textContent = '连不上 8003'; }
+function renderState() { label.textContent = t(stateKey, {count}); }
+window.addEventListener('lysmor:languagechange', () => { renderState(); renderLog(); });
+
+async function request(path, options = {}) {
+  return fetch('/api/companion/' + path, {...options, headers: {
+    'Accept-Language': language(), ...options.headers
+  }});
 }
-async function toggle(on){
+async function refresh() {
+  const id = ++refreshId;
+  let key = 'playalong.state_unavailable', active = false, total = 0;
   try {
-    const r = await fetch('/api/companion/toggle', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on})});
-    const j = await r.json();
-    say((on?'开启':'关闭')+' → ok='+!!j.ok+(j.overlay?(' overlay='+j.overlay):'')+(j.error?(' err='+j.error):''));
-    await refresh();
-  } catch(e){ say('请求失败: '+e); }
+    const response = await request('state');
+    if (response.status === 401) key = 'http.auth.required';
+    else if (response.ok) {
+      const state = await response.json();
+      if (typeof state.on === 'boolean') {
+        active = state.on;
+        key = active ? 'video.play_active' : 'video.play_off';
+        if (active && state.pet_clients > 0) { key = 'playalong.pets'; total = state.pet_clients; }
+        else if (active && state.overlay_pids?.length) { key = 'playalong.overlays'; total = state.overlay_pids.length; }
+      }
+    }
+  } catch { key = 'playalong.state_unavailable'; }
+  if (id !== refreshId) return;
+  stateKey = key; count = total;
+  dot.classList.toggle('on', active);
+  renderState();
 }
-$('#on').onclick = ()=>toggle(true);
-$('#off').onclick = ()=>toggle(false);
-$('#panic').onclick = async()=>{
-  try { const j = await (await fetch('/api/companion/panic',{method:'POST'})).json(); say('紧急停 → '+JSON.stringify(j).slice(0,200)); await refresh(); }
-  catch(e){ say('紧急停失败: '+e); }
-};
+async function act(action, on) {
+  let result = 'playalong.request_failed';
+  try {
+    const panic = on === undefined;
+    const response = await request(panic ? 'panic' : 'toggle', panic ? {method:'POST'} : {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({on})
+    });
+    if (response.status === 401) result = 'http.auth.required';
+    else if (response.ok) {
+      const data = await response.json();
+      if (on && data.ok === false && data.mode === 'none') result = 'http.error.pet_disconnected';
+      else if (data.ok === true) {
+        if (data.errors?.length || data.overlay?.startsWith('error')) result = 'playalong.incomplete';
+        else if (data.screen?.ok === false || data.screen?.error) result = 'playalong.screen_failed';
+        else result = 'playalong.done';
+      }
+    }
+  } catch { result = 'playalong.request_failed'; }
+  entries.unshift({time:new Date(), action, result});
+  if (entries.length > 50) entries.pop();
+  renderLog();
+  await refresh();
+}
+document.querySelector('#on').onclick = () => act('playalong.start', true);
+document.querySelector('#off').onclick = () => act('playalong.stop', false);
+document.querySelector('#panic').onclick = () => act('playalong.panic');
+renderState();
 refresh(); setInterval(refresh, 5000);
 </script></body></html>

@@ -1,0 +1,14 @@
+{
+  "playalong.title": "陪玩",
+  "playalong.start": "開始陪玩",
+  "playalong.stop": "停止陪玩",
+  "playalong.panic": "緊急停止",
+  "playalong.tip": "開啟後，桌寵會不時查看螢幕、說說感想，也可能主動操作。你可以隨時在這裡停止陪玩。",
+  "playalong.pets": "陪玩中 · 桌寵：{count} 隻",
+  "playalong.overlays": "陪玩中 · 桌面小人：{count} 個",
+  "playalong.state_unavailable": "無法讀取陪玩狀態，請檢查與陪玩服務的連線。",
+  "playalong.request_failed": "無法確認操作結果，請檢查目前狀態。",
+  "playalong.done": "已完成",
+  "playalong.incomplete": "部分操作未完成，請檢查桌面小人和螢幕觀察狀態。",
+  "playalong.screen_failed": "陪玩開關已更新，但未能確認螢幕觀察狀態。"
+}
