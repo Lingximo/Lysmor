@@ -10,13 +10,7 @@ function Write-Log([string]$msg) {
 
 Write-Log '--- NapCat startup check ---'
 
-# 永久对齐：QQ / NapCat 版本不匹配时直接拒绝启动，避免被踢后无限重启+扫码
-& (Join-Path $PSScriptRoot 'check-napcat-version.ps1') 2>&1 | ForEach-Object { Write-Log $_ }
-if ($LASTEXITCODE -ne 0) {
-    Write-Log 'NapCat version check failed; refusing to start'
-    exit 2
-}
-
+# 本脚本不锁 QQ / NapCat 版本：用哪个版本由使用者和 NapCat 官方文档决定。
 if (Get-Process NapCatWinBootMain -ErrorAction SilentlyContinue) {
     Write-Log 'NapCatWinBootMain is already running'
     exit 0
@@ -37,16 +31,20 @@ if ($qq) {
     Start-Sleep -Seconds 4
 }
 
-$bat = 'D:\Napcat\app\launcher.bat'
-Write-Log 'Starting NapCat launcher (hidden)'
-Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', ('"{0}"' -f $bat) -WorkingDirectory 'D:\Napcat\app' -WindowStyle Hidden
+# 改成你自己的 NapCat 安装目录（默认 C:\NapCat\app）。
+$napcatApp = $env:NAPCAT_APP
+if (-not $napcatApp) { $napcatApp = 'C:\NapCat\app' }
+$bat = Join-Path $napcatApp 'launcher.bat'
+Write-Log ('Starting NapCat launcher (hidden): ' + $bat)
+Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', ('"{0}"' -f $bat) -WorkingDirectory $napcatApp -WindowStyle Hidden
 
 for ($i = 0; $i -lt 60; $i++) {
     Start-Sleep -Seconds 1
     if (Get-Process NapCatWinBootMain -ErrorAction SilentlyContinue) {
         Write-Log 'NapCatWinBootMain started'
         Start-Sleep -Seconds 15
-        & (Join-Path $PSScriptRoot 'napcat-quicklogin.ps1')
+        $quick = Join-Path $PSScriptRoot 'napcat-quicklogin.ps1'
+        if (Test-Path $quick) { & $quick }
         exit 0
     }
 }

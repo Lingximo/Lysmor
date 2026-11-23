@@ -72,7 +72,6 @@ def targets():
         ("灾后复活", _p(MEM, "nirvana", "kit.py")),
         ("启动", _p(STARTUP, "start-astrbot.ps1")),
         ("启动", _p(STARTUP, "start-napcat.ps1")),
-        ("启动", _p(STARTUP, "check-napcat-version.ps1")),
     ]
     return out
 

@@ -10,7 +10,10 @@ import sys
 
 import requests
 
-CONFIG = r"D:\Napcat\app\config\webui.json"
+import os
+
+CONFIG = os.environ.get("NAPCAT_WEBUI") or os.path.join(
+    os.environ.get("NAPCAT_APP") or r"C:\NapCat\app", "config", "webui.json")
 BASE = "http://127.0.0.1:8013"
 QR_OUT = r"C:\你的用户\CompanionStartup\napcat-qr.png"
 

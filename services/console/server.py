@@ -9,7 +9,10 @@
   GET /              -> 控制台页（口令门禁 ?t=口令）
 
 用法：
-    python server.py [--port 8001] [--token 口令] [--config ../../config/config.json] [--services <注册表路径>]
+    python server.py [--port 8010] [--token 口令] [--config ../../config/config.json] [--services <注册表路径>]
+
+说明：这是 services/ 下的最小示例控制台，独立于正式栈（Hub 在 8009）。
+日常入口请用根目录的 打开入口.cmd 或 scripts/start-all.cmd，它会拉起正式栈并打开 Hub。
 """
 
 import argparse
@@ -24,7 +27,7 @@ from urllib.parse import urlparse, parse_qs
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, "data")
-CONFIG = {"gate_token": "", "port": 8009}   # 注意：别和网页聊天(8001)撞端口
+CONFIG = {"gate_token": "", "port": 8010}   # 注意：8009 是 Hub 的端口，别和它撞
 
 
 def load_config(path):
@@ -170,7 +173,7 @@ def main():
     global SERVICES_PATH
     SERVICES_PATH = args.services
     load_config(args.config)
-    port = args.port or int(CONFIG.get("port") or 8009)
+    port = args.port or int(CONFIG.get("port") or 8010)
     if args.token is not None:
         CONFIG["gate_token"] = args.token
     if not CONFIG["gate_token"]:

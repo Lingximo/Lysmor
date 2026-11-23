@@ -37,7 +37,8 @@ import requests
 from PIL import Image, ImageDraw
 
 ROOT = r"D:\你的数据目录\qqwatch"
-NAP_WEBUI = r"D:\Napcat\app\config\webui.json"
+NAP_APP = os.environ.get("NAPCAT_APP") or r"C:\NapCat\app"
+NAP_WEBUI = os.environ.get("NAPCAT_WEBUI") or os.path.join(NAP_APP, "config", "webui.json")
 STARTUP = r"C:\你的用户\CompanionStartup"
 START_NAPCAT = os.path.join(STARTUP, "start-napcat.ps1")
 QR_PATHS = [os.path.join(ROOT, "qr.png"), os.path.join(STARTUP, "napcat-qr.png")]
@@ -395,7 +396,7 @@ def restart_napcat():
             )
         time.sleep(3)
 
-    bat = r"D:\Napcat\app\launcher.bat"
+    bat = os.path.join(NAP_APP, "launcher.bat")
     if not os.path.exists(bat):
         log("找不到 launcher.bat")
         return False
@@ -403,7 +404,7 @@ def restart_napcat():
     try:
         subprocess.Popen(
             ["cmd.exe", "/c", bat],
-            cwd=r"D:\Napcat\app",
+            cwd=NAP_APP,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except OSError as exc:

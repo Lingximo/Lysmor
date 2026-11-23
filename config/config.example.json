@@ -8,7 +8,7 @@
   "gate_token": "你自己生成的一段随机口令（越长越好）",
   "ports": {
     "web_chat": 8001,
-    "console": 8009,
+    "console": 8010,
     "life_panel": 8005,
     "brain_map": 8006,
     "house_3d": 8007,
