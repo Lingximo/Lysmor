@@ -142,25 +142,14 @@ def check_im():
         return
     ps = "(Get-Item -LiteralPath '%s').VersionInfo.FileVersion" % IM_PATH
     out = run(["powershell", "-NoProfile", "-Command", ps]).strip()
-    want = EXPECTED.get("im_version", "")
-    if want and out and out != want:
-        add("WARN", "IM 版本", out, "期望 %s；不要自动升级" % want)
-    else:
-        add("OK", "IM 客户端", out or "存在", "版本锁 %s" % want)
+    add("OK", "IM 客户端", out or "存在", "版本自行选择；本项目不锁版本")
 
 
 def check_napcat():
     if not os.path.isdir(NAPCAT_APP):
         add("WARN", "协议接入", "未找到 %s" % NAPCAT_APP, "按其官方文档安装")
         return
-    lock = os.path.abspath(os.path.join(NAPCAT_APP, "..", "version-lock.json"))
-    actual = ""
-    try:
-        with open(lock, encoding="utf-8-sig") as f:
-            actual = str(json.load(f).get("version") or "")
-    except Exception:  # noqa: BLE001
-        pass
-    add("OK", "协议接入", actual or "存在")
+    add("OK", "协议接入", "存在")
 
 
 def check_startup():
