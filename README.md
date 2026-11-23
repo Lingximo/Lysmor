@@ -89,6 +89,27 @@ python code/app/launch_with_check.py
 
 ---
 
+## 看门狗（可选，推荐）
+
+`code/tools/watch_servers.ps1` 每 3 分钟检查一次：页面服务挂了自动拉起；
+同时刷新「情绪真实化」的周期状态（构造情绪 / 预期差）。
+
+**安装一次即可**（右键「以管理员身份运行」）：
+
+```bat
+code\tools\install_watchdog.cmd
+```
+
+它会注册计划任务 `Companion-Watchdog`（每 3 分钟）。卸载：
+
+```bat
+code\tools\install_watchdog.cmd /uninstall
+```
+
+> 不做这一步也能跑，只是页面挂了要手动 `restart_bot.ps1`，且「构造情绪」会退回固定标签。
+
+---
+
 ## 文档
 
 | 文档 | 内容 |
