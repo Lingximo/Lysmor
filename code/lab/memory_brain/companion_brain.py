@@ -181,29 +181,9 @@ def ppr_expand(seed_ids, limit: int = 8, alpha: float = 0.55, iters: int = 12) -
     mem_edges = _load_mem_graph()
     if not mem_edges:
         return []
-    try:
-        edges = con.execute(
-            "select source_memory_id, target_memory_id from graph_edges where status='active'"
-        ).fetchall()
-        node_map = defaultdict(list)
-        for m, src in con.execute(
-            "select e.source_memory_id, n.node_id from graph_entry_nodes n "
-            "join graph_entries e on e.id = n.entry_id"
-        ):
-            node_map[int(m)].append(int(src))
-    except Exception:
-        con.close()
-        return []
-    con.close()
+    # 2026-11-22 修复：原版会重新查库重建图（con 未定义 → 崩溃，且 O(N²)），
+    # 现在直接复用 _load_mem_graph() 的图。关联语义不变，只修崩溃 + 去冗余。
 
-    mem_edges = defaultdict(set)
-    for a, b in edges:
-        mem_edges[int(a)].add(int(b))
-        mem_edges[int(b)].add(int(a))
-    for m, nodes in node_map.items():
-        for other, onodes in node_map.items():
-            if other != m and set(nodes) & set(onodes):
-                mem_edges[m].add(other)
 
     if not mem_edges:
         return []

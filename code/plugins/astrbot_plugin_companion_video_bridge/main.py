@@ -137,13 +137,13 @@ class VideoBridge(Star):
                   "<BOT_INSTANCE>/core/data/plugin_data/"
                   "astrbot_plugin_companion_mood/state.json")
 
-    def _mood_snapshot(self):
+    def _mood_snapshot(self, importance=0.5):
         try:
             with open(self.MOOD_STATE, encoding="utf-8") as f:
                 st = json.load(f)
         except Exception:
             return None
-        return {
+        snap = {
             "emotion": str(st.get("emotion_type") or ""),
             "valence": round(float(st.get("valence") or 0), 3),
             "energy": round(float(st.get("energy") or 0), 3),
@@ -151,9 +151,35 @@ class VideoBridge(Star):
             "thirst": round(float(st.get("thirst") or 0), 3),
             "irritability": round(float(st.get("irritability") or 0), 3),
             "clinginess": round(float(st.get("clinginess") or 0), 3),
+            "loneliness": round(float(st.get("loneliness") or 0), 3),
             "scar": round(float(st.get("scar") or 0), 3),
             "at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
+        # --- 情绪真实化 Phase A：情绪混色 + 命运 + 深度（只记不改）---
+        try:
+            blend = st.get("emotion_blend") or []
+            if isinstance(blend, list):
+                snap["emotion_blend"] = [
+                    {"key": str(b.get("key") or ""), "weight": round(float(b.get("weight") or 0), 3)}
+                    for b in blend if isinstance(b, dict)
+                ]
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            imp = float(importance)
+            val = float(st.get("valence") or 0)
+            scar = float(st.get("scar") or 0)
+            sadness = float(st.get("sadness") or 0)
+            snap["depth"] = round(min(1.0, max(0.0, 0.6 * imp + 0.3 * abs(val) + 0.1 * scar)), 3)
+            if val <= -0.25 and (imp >= 0.6 or scar >= 0.3 or sadness >= 0.4):
+                snap["fate"] = "敏化"
+            elif val >= 0.25 and imp >= 0.5:
+                snap["fate"] = "回味"
+            else:
+                snap["fate"] = "习惯化"
+        except Exception:  # noqa: BLE001
+            pass
+        return snap
 
     async def _flush_pending(self):
         items = pending_store.load(PENDING) if pending_store is not None else _load(PENDING)
@@ -206,7 +232,7 @@ class VideoBridge(Star):
                         "create_time": item.get("time") or time.time(),
                     })
                     if not metadata.get("mood_snapshot"):
-                        snap = item.get("mood_snapshot") or self._mood_snapshot()
+                        snap = item.get("mood_snapshot") or self._mood_snapshot(auto_importance)
                         if snap:
                             metadata["mood_snapshot"] = snap
                     doc_id = await engine.add_memory(
@@ -233,7 +259,7 @@ class VideoBridge(Star):
                             "source": item.get("source") or "video_call",
                             "memory_type": "episode",
                             "create_time": item.get("time") or time.time(),
-                            "mood_snapshot": item.get("mood_snapshot") or self._mood_snapshot(),
+                            "mood_snapshot": item.get("mood_snapshot") or self._mood_snapshot(importance),
                         },
                     )
                     preview = summary[:180]

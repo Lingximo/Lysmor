@@ -88,39 +88,87 @@ def _row_to_text(row):
     return ("[%s] %s" % (day, text)) if day else text
 
 
+def _row_meta(row):
+    """从行里取 metadata 字典（失败返回 {}）。"""
+    try:
+        return json.loads(str(row[1] or "{}")) or {}
+    except Exception:
+        return {}
+
+
 def recent(limit=3, query=None):
-    """返回最近的记忆摘要列表；任何异常都返回 []。"""
+    """返回最近的记忆摘要列表；任何异常都返回 []。
+
+    2026-11-22 加「情绪一致性召回」（拟人化）：在已拉到的候选里，按
+    「关键词命中 + 记忆里的感觉×此刻的她」重排——难过时想起难过的事。
+    只重排、不增删候选，权重 MOOD_WEIGHT 可调（0=关闭/回滚）。"""
     out = []
     seen = set()
     try:
         con = _connect()
         try:
-            rows = []
+            cand = []  # (is_keyword, row)
             q = (query or "").strip()
             if q:
                 like = "%" + q[:40] + "%"
                 try:
-                    rows = list(con.execute(
-                        "select text, metadata, created_at from documents "
-                        "where text like ? and " + ACTIVE + " "
-                        "order by created_at desc limit ?",
-                        (like, max(1, limit))))
+                    for row in con.execute(
+                            "select text, metadata, created_at from documents "
+                            "where text like ? and " + ACTIVE + " "
+                            "order by created_at desc limit ?", (like, max(1, limit * 2))):
+                        cand.append((True, row))
                 except sqlite3.Error:
-                    rows = []
-            if len(rows) < limit:
-                more = list(con.execute(
+                    pass
+            for row in con.execute(
                     "select text, metadata, created_at from documents "
                     "where " + ACTIVE + " "
-                    "order by created_at desc limit ?", (max(4, limit * 2),)))
-                rows.extend(more)
-            for row in rows:
+                    "order by created_at desc limit ?", (max(4, limit * 3),)):
+                cand.append((False, row))
+            # 感觉匹配：只重排，不改变候选集合
+            cur = None
+            try:
+                import mood_recall as _mr
+                cur = _mr.cur_feeling()
+            except Exception:
+                cur = None
+            scored = []
+            sims = []
+            now_ts = time.time()
+            for kw, row in cand:
                 line = _row_to_text(row)
-                if not line or line in seen:
+                if not line:
+                    continue
+                # 新近度（3 天从 1 衰减到 0）：保住"最近的事优先"，感觉只做轻微重排
+                try:
+                    import datetime as _dt
+                    _t = time.mktime(_dt.datetime.strptime(str(row[2] or "")[:19], "%Y-%m-%d %H:%M:%S").timetuple())
+                    recency = 1.0 - min(1.0, (now_ts - _t) / (3 * 86400.0))
+                except Exception:
+                    recency = 0.0
+                s = (2.0 if kw else 0.0) + recency
+                if cur is not None:
+                    try:
+                        snap = _row_meta(row).get("mood_snapshot") or {}
+                        sim = _mr.feeling_sim(snap, cur)
+                        s += sim * _mr.MOOD_WEIGHT
+                        sims.append(round(sim, 3))
+                    except Exception:
+                        pass
+                scored.append((s, line))
+            scored.sort(key=lambda x: -x[0])
+            for s, line in scored:
+                if line in seen:
                     continue
                 seen.add(line)
                 out.append(line)
                 if len(out) >= limit:
                     break
+            if cur is not None:
+                try:
+                    import mood_recall as _mr
+                    _mr.shadow_log(q, cur, sims)
+                except Exception:
+                    pass
         finally:
             con.close()
     except Exception:

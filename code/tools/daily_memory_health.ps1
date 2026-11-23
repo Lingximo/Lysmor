@@ -57,3 +57,9 @@ Add-Content -Path "D:\你的数据目录\logs\memory-health.log" -Value ("[vital
 if ($vkLine -match "FAIL|发现问题") {
     Add-Content -Path "D:\你的数据目录\logs\memory-alert.log" -Value ("{0} VITALS: {1}" -f $stamp, $vkLine) -Encoding UTF8
 }
+
+# 8) 情绪真实化（Phase B/E）：构造情绪 + 预期差
+#    Phase B 的"实时构造"需要每 3 分钟跑一次；若没配 3 分钟计划任务，
+#    这里在每日体检时至少跑一次（构造文件 >10 分钟会被插件当过期、回退原标签）。
+& $venv -X utf8 "$tools\emotion_construct.py" | Out-Null
+& $venv -X utf8 "$tools\expect_gap.py" | Out-Null

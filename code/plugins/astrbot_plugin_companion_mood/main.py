@@ -3630,7 +3630,51 @@ class CompanionMood(Star):
         state["loneliness"] = round(lonely, 4)
         state["dominance"] = round(dominance, 4)
         state["emotion_candidates"] = labels
+        _prev_emotion = str(state.get("emotion_type") or "")   # Phase C：惯性用（本次心跳前的情绪）
         state["emotion_type"] = labels[0] if labels else "平静"
+        # 情绪真实化 Phase B：构造主义情绪——用"身体+最近上下文"构造的情绪替换固定标签。
+        # 由 code/tools/emotion_construct.py 每 3 分钟写 state/emotion_constructed.json；
+        # 文件新鲜（<10 分钟）且置信度 >= 0.40 才用，否则保留原标签（安全兜底）。
+        try:
+            with open(r"D:\你的数据目录\state\emotion_constructed.json", encoding="utf-8") as _cf:
+                _c = json.load(_cf)
+            if time.time() - float(_c.get("at") or 0) < 600 and float(_c.get("confidence") or 0) >= 0.40:
+                _ce = str(_c.get("constructed") or "").strip()
+                if _ce:
+                    state["emotion_type"] = _ce
+        except Exception:
+            pass
+        # 情绪真实化 Phase C：情绪惯性——新的情绪要连续 2 次心跳才真正切换（不瞬间跳变）
+        try:
+            _raw_new = str(state.get("emotion_type") or "")
+            if _raw_new != _prev_emotion and _prev_emotion:
+                _sw = int(state.get("emotion_switch") or 0) + 1
+                if _sw >= 2:
+                    state["emotion_switch"] = 0
+                else:
+                    state["emotion_switch"] = _sw
+                    state["emotion_type"] = _prev_emotion   # 惯性：先保持旧情绪
+            else:
+                state["emotion_switch"] = 0
+        except Exception:
+            pass
+        # 情绪真实化 Phase D：自我情绪——反思产生的"对自己的情绪"（每天更新一次，只记不改）
+        try:
+            with open(r"D:\你的数据目录\state\self_emotion.json", encoding="utf-8") as _sf:
+                _s = json.load(_sf)
+            state["self_emotion"] = str(_s.get("emotion") or "")
+            state["self_worth"] = float(_s.get("worth") or 0.5)
+        except Exception:
+            pass
+        # 情绪真实化 Phase E：预期差——"她期待你 vs 现实"的落差（只记，供提示词用）
+        try:
+            with open(r"D:\你的数据目录\state\expect_gap.json", encoding="utf-8") as _ef:
+                _e = json.load(_ef)
+            if time.time() - float(_e.get("at") or 0) < 900:   # 15 分钟内的预期差才算数
+                state["expect_mood"] = str(_e.get("mood") or "正常")
+                state["expect_gap"] = float(_e.get("expect") or 0.5)
+        except Exception:
+            pass
         if affect["happy_peak"]:
             state["emotion_level"] = "幸福峰值"
         elif affect["cry_peak"]:

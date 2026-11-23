@@ -76,8 +76,23 @@ def report(db):
 def apply(db, graph_db):
     os.makedirs(LOG_DIR, exist_ok=True)
     bak = os.path.join(LOG_DIR, "backup-memory-%s.db" % time.strftime("%Y%m%d-%H%M%S"))
-    shutil.copy2(db, bak)
-    print("已备份:", bak)
+    # 用 SQLite 备份 API（不是裸拷）：WAL 模式下裸拷可能缺最新数据
+    try:
+        from contextlib import closing
+        with closing(sqlite3.connect(db, timeout=30)) as src, \
+                closing(sqlite3.connect(bak, timeout=30)) as dst:
+            src.backup(dst)
+            row = dst.execute("pragma quick_check").fetchone()
+        if not row or str(row[0]).lower() != "ok":
+            raise RuntimeError("备份 quick_check 未通过：%s" % (row,))
+        with closing(sqlite3.connect(bak, timeout=30)) as v:
+            v.execute("begin immediate")
+            v.execute("commit")
+        print("已备份(WAL 安全):", bak)
+    except Exception as exc:  # noqa: BLE001
+        print("SQLite 备份失败，回退裸拷:", exc)
+        shutil.copy2(db, bak)
+        print("已备份:", bak)
 
     con = sqlite3.connect(db, timeout=30)
     cur = con.cursor()
