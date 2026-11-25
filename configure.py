@@ -85,43 +85,72 @@ def autodetect():
 
 
 def env_install_missing():
-    """尽力自动安装缺失的环境（除账号外的软件），返回 [{name, ok, detail}]。
+    """尽力自动安装缺失的环境（除账号外的软件），返回 [{name, ok, detail, hint}]。
     winget 有的就 winget 静默装；装完 Ollama 后在后台拉两个模型。"""
     results = []
 
-    def winget(pkg, name):
+    def _friendly_error(out: str) -> str:
+        low = (out or "").lower()
+        if "0x80072efd" in low or "internetopenurl" in low or "无法连接" in low or "cannot connect" in low:
+            return ("下载失败：这台电脑连不上 GitHub/Ollama 的下载源。"
+                    "请检查网络或代理，或手动安装后重跑本页（Ollama: ollama.com/download/windows）")
+        if "0x80072ee7" in low or "name resolution" in low or "解析" in out:
+            return "下载失败：域名解析失败，请检查 DNS/网络后重试，或手动安装。"
+        return "安装失败：" + ((out or "未知错误").strip().splitlines() or ["未知错误"])[-1][:180]
+
+    def winget(pkg, name, manual=""):
         if not shutil.which("winget"):
             results.append({"name": name, "ok": False,
-                            "detail": "没找到 winget，请手动安装（见 模型需求清单.md）"})
-            return
+                            "detail": "没找到 winget，请手动安装（见 模型需求清单.md）" + (("；" + manual) if manual else "")})
+            return False
         try:
             r = subprocess.run(["winget", "install", "-e", "--id", pkg,
                                 "--accept-source-agreements", "--accept-package-agreements",
                                 "--silent"], capture_output=True, text=True, timeout=900)
-            results.append({"name": name, "ok": r.returncode == 0,
-                            "detail": ((r.stdout or "") + (r.stderr or ""))[-160:]})
+            out = (r.stdout or "") + (r.stderr or "")
+            ok = r.returncode == 0
+            results.append({"name": name, "ok": ok,
+                            "detail": (out.strip()[-160:] if ok else _friendly_error(out))})
+            return ok
         except Exception as exc:  # noqa: BLE001
-            results.append({"name": name, "ok": False, "detail": str(exc)[:120]})
+            results.append({"name": name, "ok": False,
+                            "detail": "安装失败：" + str(exc)[:120] + (("；" + manual) if manual else "")})
+            return False
 
     # Python 3.12
     if sys.version_info[:2] == (3, 12):
         results.append({"name": "Python 3.12", "ok": True, "detail": "%d.%d.%d 已装" % sys.version_info[:3]})
     else:
-        winget("Python.Python.3.12", "Python 3.12")
+        winget("Python.Python.3.12", "Python 3.12", "python.org/downloads，安装时勾 Add to PATH")
 
     # Ollama
     ollama_ok = bool(shutil.which("ollama"))
     if ollama_ok:
         results.append({"name": "Ollama", "ok": True, "detail": shutil.which("ollama")})
     else:
-        winget("Ollama.Ollama", "Ollama")
+        if winget("Ollama.Ollama", "Ollama", "ollama.com/download/windows"):
+            ollama_ok = True
+        else:
+            # winget 装完有时 PATH 还没刷新，直接再查一遍常见安装位置
+            for cand in (
+                os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Ollama", "ollama.exe"),
+                r"C:\Program Files\Ollama\ollama.exe",
+            ):
+                if cand and os.path.isfile(cand):
+                    ollama_ok = True
+                    results.append({"name": "Ollama", "ok": True, "detail": cand + "（重开终端后 PATH 才会更新）"})
+                    break
+            if not ollama_ok:
+                results.append({"name": "Ollama", "ok": False,
+                                "detail": "Ollama 没装上：其它功能还能用，但视觉/向量检索（qwen3-vl、bge-m3）需要它。"
+                                          "手动装：https://ollama.com/download/windows ，装完重跑本页。"})
 
     # ffmpeg
     ff = shutil.which("ffmpeg")
     if ff:
         results.append({"name": "ffmpeg", "ok": True, "detail": ff})
     else:
-        winget("Gyan.FFmpeg", "ffmpeg")
+        winget("Gyan.FFmpeg", "ffmpeg", "winget install Gyan.FFmpeg")
 
     # AstrBot（没有 winget 包，给指引）
     det = autodetect()
@@ -131,11 +160,14 @@ def env_install_missing():
         results.append({"name": "AstrBot", "ok": False,
                         "detail": "需要手动装：官方 GitHub 仓库下载启动器，建实例后重跑本页即可自动识别"})
 
-    # 模型：Ollama 可用就后台拉
-    if ollama_ok or True:  # 也允许用本机已有 ollama 命令
+    # 模型：只有 Ollama 真能用才拉，否则如实说没拉
+    if ollama_ok:
         _pull_models_background()
         results.append({"name": "模型下载", "ok": True, "detail": "已后台开始拉 qwen3-vl:4b 与 bge-m3（可能要几分钟，稍后体检可见）"})
+    else:
+        results.append({"name": "模型下载", "ok": False, "detail": "跳过：Ollama 没装上，先装 Ollama 再重跑本页"})
     return results
+
 
 
 def _pull_models_background():

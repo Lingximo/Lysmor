@@ -195,10 +195,18 @@
     box.innerHTML = "正在检查与安装（可能要几分钟）…";
     fetch("/api/envsetup", { method: "POST" }).then(function (r) { return r.json(); }).then(function (d) {
       var html = "";
+      var failed = 0;
       (d.results || []).forEach(function (it) {
+        if (!it.ok) failed += 1;
         html += "<div class='item'><span class='mark " + (it.ok ? "ok" : "fail") + "'>" +
           (it.ok ? "✅" : "❌") + "</span><span><b>" + it.name + "</b> <span class='detail'>" + it.detail + "</span></span></div>";
       });
+      if (failed) {
+        html += "<div class='item'><span class='mark fail'>⚠️</span><span><b>" + failed +
+          " 项没装上</b> <span class='detail'>按上面的提示手动补齐后，再点一次「自动装机」或直接继续（缺 Ollama 只影响看图/检索）。</span></span></div>";
+      } else {
+        html += "<div class='item'><span class='mark ok'>✅</span><span><b>环境齐了</b> <span class='detail'>可以继续下一步。</span></span></div>";
+      }
       box.innerHTML = html;
     }).catch(function (e) {
       box.innerHTML = "装机请求失败：" + e.message;
@@ -229,11 +237,14 @@
         box.className = "";
         box.innerHTML =
           "<b>✅ 自动配置完成！</b><br>" +
-          "重写 " + d.files + " 个文件 / " + d.repl + " 处；口令已自动生成。<br>" +
+          "重写 " + d.files + " 个文件 / " + d.repl + " 处占位符。" +
+          (d.repl === 0 ? "（如果这是第一次配置，可能没找到占位符——请看下面体检结果）" : "") +
+          "；口令已自动生成。<br>" +
           (det.bot_instance ? "自动找到 AstrBot 实例：" + det.bot_instance + "<br>" : "") +
           "<b>大脑</b>：" + (d.astrbot || "") + "<br>" +
           "<b>声纹/脸</b>：" + (en.note || "未提交样本") + "<br><br>" +
-          "<b>下一步</b>：双击 打开入口.cmd 开始使用。";
+          "<b>下一步</b>：双击 打开入口.cmd 开始使用。" +
+          "<br><span style='opacity:.75'>若上面「自动装机」有 ❌，请先按提示补齐，否则相关功能（看图/检索/视频）不可用。</span>";
       } else {
         box.className = "err";
         box.innerHTML = "<b>❌ 出错了：</b>" + (d.error || "未知错误");
