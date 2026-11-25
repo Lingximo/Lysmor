@@ -1,4 +1,4 @@
-"""TA的大平层：行为引擎 + 俯视图服务（8007）。
+﻿"""TA的大平层：行为引擎 + 俯视图服务（8007）。
 
 设计边界（很重要）：
   - 只**读**情绪插件的 state.json，绝不写它；她本体的生理/记忆由插件单独负责。
@@ -25,7 +25,9 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, unquote
 
+# 优先从仓库自带的 code/tools 找模块，再回退到配置时替换出来的数据目录
 sys.path.insert(0, r"D:\你的数据目录\tools")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
 import gate  # noqa: E402  共用访问口令
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -1026,3 +1028,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

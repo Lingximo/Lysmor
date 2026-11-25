@@ -1,4 +1,4 @@
-"""TA记忆大脑：只读可视化服务。
+﻿"""TA记忆大脑：只读可视化服务。
 
 不写数据库、不改插件，只把 LivingMemory 的 graph_nodes / graph_edges
 读出来给浏览器画图。默认只监听 127.0.0.1:8006。
@@ -16,7 +16,9 @@ import urllib.parse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+# 优先从仓库自带的 code/tools 找模块，再回退到配置时替换出来的数据目录
 sys.path.insert(0, r"D:\你的数据目录\tools")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
 import gate  # noqa: E402  共用访问口令
 
 # 遗忘曲线参数直接复用 memoryrhythm，保证大脑里看到的和实际结算的一致
@@ -518,3 +520,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

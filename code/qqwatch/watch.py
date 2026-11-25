@@ -1,4 +1,4 @@
-"""TA QQ 掉线守护 (qqwatch)
+﻿"""TA QQ 掉线守护 (qqwatch)
 
 每 60 秒看一次 NapCat 的登录状态，分三种情况处理：
 
@@ -176,7 +176,9 @@ def handle_send_failures():
 
 # ---------------------------------------------------------------- 访问口令
 # 和其他页面共用同一个口令（D:\你的数据目录\gate_token.txt）
+# 优先从仓库自带的 code/tools 找模块，再回退到配置时替换出来的数据目录
 sys.path.insert(0, r"D:\你的数据目录\tools")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
 try:
     import gate
 except Exception:  # noqa: BLE001
@@ -908,3 +910,4 @@ if __name__ == "__main__":
         print("已重启" if restart_napcat() else "重启失败")
         sys.exit(0)
     sys.exit(main())
+

@@ -1,11 +1,13 @@
-import json
+﻿import json
 import os
 import sys
 import time
 from urllib.parse import parse_qs, urlparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+# 优先从仓库自带的 code/tools 找模块，再回退到配置时替换出来的数据目录
 sys.path.insert(0, r"D:\你的数据目录\tools")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
 import gate  # noqa: E402  共用访问口令
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -503,4 +505,5 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"TA生命状态: http://127.0.0.1:{PORT}  (局域网需口令)")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+
 

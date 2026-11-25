@@ -1,5 +1,10 @@
 # 版本历史
 
+## v0.3.1
+
+- 修复：全新下载后「生命面板」「记忆星图」「3D 大平层」「QQ 监听」四个模块一启动就报 `ModuleNotFoundError: No module named 'gate'`——它们只从占位符路径（`D:\你的数据目录\tools`）导入共用模块；现在优先从仓库自带的 `code/tools` 导入，占位符保留给配置向导替换
+- 验证：全新克隆 + 独立 venv，Hub(8009)、网页聊天(8001)、生命面板(8005)、记忆星图(8006) 均可访问
+
 ## v0.3.0
 
 - 新增：`preflight.py` 装机自检——Python 版本、pip、核心依赖、config.json、ffmpeg 逐项 PASS/FAIL，并直接给出下一步命令
