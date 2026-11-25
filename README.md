@@ -59,6 +59,19 @@ Lysmor 把一套完整的「AI 伴侣」系统拆成可复用的模块：长期�
 
 首次配置完成后，日常使用只需双击 **`打开入口.cmd`**：自动启动服务、自动体检、自动打开总入口。
 
+### 装不上怎么办
+
+两个入口都会先跑一遍自检，缺什么会直接写出来（`python preflight.py` 可手动跑）：
+
+| 提示 | 怎么办 |
+|---|---|
+| `Python 3.12 was not found on PATH` | 去 [python.org/downloads](https://www.python.org/downloads/) 装 3.12+，**安装时勾选 Add python.exe to PATH**；或用 `winget install Python.Python.3.12` |
+| `缺少 aiohttp、Pillow…` | 在本目录执行 `python -m pip install -r requirements.txt` |
+| `config.json 还没有配置` | 双击 `一键配置.cmd` 走一遍配置向导 |
+| `ffmpeg 未找到`（可选） | 只有视频通话需要；`winget install Gyan.FFmpeg` |
+
+装完 Python 后如果双击没反应，双击 `一键配置.cmd` 再看一遍自检输出。
+
 ---
 
 ## 素材导入

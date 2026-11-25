@@ -1,0 +1,10 @@
+# Lysmor 核心运行依赖（Python 3.12）
+# 装完 Python 后，在本目录执行：
+#   python -m pip install -r requirements.txt
+aiohttp>=3.9,<4
+Pillow>=10,<13
+requests>=2.31,<3
+numpy>=1.26,<3
+qrcode>=7.4,<9
+PyJWT>=2.8,<3
+cryptography>=42,<47

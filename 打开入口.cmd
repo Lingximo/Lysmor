@@ -1,11 +1,35 @@
 @echo off
 rem ============================================================
-rem  打开入口 - 双击启动服务并打开总入口页（无黑窗口）
+rem  Open entry - start services and open the hub page
+rem  ASCII only on purpose: cmd.exe parses this file as GBK.
 rem ============================================================
+chcp 65001 >nul
+setlocal
+
+where python >nul 2>nul
+if errorlevel 1 goto :nopython
+
+python "%~dp0preflight.py"
+if errorlevel 1 (
+  echo.
+  echo [!] Fix the items above, then double-click this file again.
+  pause
+  exit /b 1
+)
+
 where pythonw >nul 2>nul
 if errorlevel 1 (
-  python open_entry.py
-  if errorlevel 1 echo 启动失败：请确认已安装 Python 3.12（勾选 Add to PATH） && pause
+  python "%~dp0open_entry.py"
 ) else (
-  start "" pythonw open_entry.py
+  start "" pythonw "%~dp0open_entry.py"
 )
+exit /b 0
+
+:nopython
+echo.
+echo [!] Python 3.12 was not found on PATH.
+echo     Install it from https://www.python.org/downloads/
+echo     Tick "Add python.exe to PATH" during setup, then double-click this file again.
+echo.
+pause
+exit /b 1

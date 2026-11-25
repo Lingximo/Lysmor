@@ -1,5 +1,12 @@
 # 版本历史
 
+## v0.3.0
+
+- 新增：`preflight.py` 装机自检——Python 版本、pip、核心依赖、config.json、ffmpeg 逐项 PASS/FAIL，并直接给出下一步命令
+- 新增：`requirements.txt`（核心依赖）与 `requirements-optional.txt`（视频/语音可选），不再需要自己猜装什么
+- 改进：`打开入口.cmd` / `一键配置.cmd` 改为纯 ASCII 批处理 + `chcp 65001`，先跑自检再启动；没装 Python 时给出明确的下载地址和「勾 Add to PATH」提示，窗口停住不闪退
+- 文档：README 新增「装不上怎么办」对照表（缺 Python / 缺依赖 / 未配置 / 缺 ffmpeg）
+
 ## v0.2.4
 
 - 修复：`scripts\start-all` 原来拉起的是 `services\` 下的示例栈，且不含视频服务，容易让人以为「只有控制台能用」；现在统一拉起正式栈（Hub / 网页聊天 / 视频通话 / 生命面板 / 记忆星图 / 大平层）并打开 Hub
