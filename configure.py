@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """一键配置
 
 两条路，效果一样：
@@ -101,7 +101,7 @@ def env_install_missing():
     def winget(pkg, name, manual=""):
         if not shutil.which("winget"):
             results.append({"name": name, "ok": False,
-                            "detail": "没找到 winget，请手动安装（见 模型需求清单.md）" + (("；" + manual) if manual else "")})
+                            "detail": "没找到 winget，请手动安装（见 docs/model-requirements.md）" + (("；" + manual) if manual else "")})
             return False
         try:
             r = subprocess.run(["winget", "install", "-e", "--id", pkg,
@@ -668,9 +668,10 @@ def main():
     msg = patch_astrbot_llm(cfg)
     print("完成：重写 %d 个文件 / %d 处；config.json 与口令已生成。" % (n_files, n_repl))
     print("AstrBot：%s" % msg)
-    print("下一步：docs/配置清单.md 第 4 步（启动）。")
+    print("下一步：docs/setup-checklist.md 第 4 步（启动）。")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+

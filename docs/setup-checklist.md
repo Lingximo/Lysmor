@@ -10,7 +10,7 @@ git clone <仓库地址>          # 或：下载 zip 解压
 
 ## 1. 装环境
 
-照 `docs/模型需求清单.md`：Python 3.12（勾 Add to PATH）、Ollama（拉两个模型）、ffmpeg、**AstrBot**（大脑外壳，装好把 `code/plugins/` 里的 companion_* 插件拷进 `data/plugins/`）；其余按需。
+照 `docs/model-requirements.md`：Python 3.12（勾 Add to PATH）、Ollama（拉两个模型）、ffmpeg、**AstrBot**（大脑外壳，装好把 `code/plugins/` 里的 companion_* 插件拷进 `data/plugins/`）；其余按需。
 
 **别忘了记忆内核插件 `astrbot_plugin_livingmemory`**（LivingMemory，作者 lxfight）：
 - 仓库：`https://github.com/lxfight-s-Astrbot-Plugins/astrbot_plugin_livingmemory`
@@ -20,7 +20,7 @@ git clone <仓库地址>          # 或：下载 zip 解压
 
 ## 2. 备账号与 API
 
-照 `docs/登入清单.md`：**DeepSeek API Key**（聊天大脑，`platform.deepseek.com`）、AstrBot 实例 UUID、QQ 扫码、网盘 cookie——**全是你自己的**，填进本地 `config.json`，永远别提交。
+照 `docs/login-checklist.md`：**DeepSeek API Key**（聊天大脑，`platform.deepseek.com`）、AstrBot 实例 UUID、QQ 扫码、网盘 cookie——**全是你自己的**，填进本地 `config.json`，永远别提交。
 
 ## 3. 一键配置（入口，推荐可视化）
 

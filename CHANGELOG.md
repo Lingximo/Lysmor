@@ -1,5 +1,10 @@
 # 版本历史
 
+## v0.3.3
+
+- 改进：`docs/` 下五个中文文件名改成 ASCII（`setup-checklist.md`、`model-requirements.md`、`login-checklist.md`、`architecture.md`、`ui-design.md`），避免中文文件名在终端、URL、部分编辑器/工具里出问题；文档内容与标题仍是中文
+- 同步更新 README、`configure.py` 与文档之间的全部引用
+
 ## v0.3.2
 
 - 修复：「自动装机」里 Ollama 下载失败时只显示 winget 的原始报错（`InternetOpenUrl() failed 0x80072efd`），看不懂也照着修不了——现在翻译成「连不上下载源，检查网络/代理，或去 ollama.com 手动装」

@@ -79,8 +79,8 @@
 
 ## 七、部署要点
 
-1. 环境：Python 3.12 + Ollama + ffmpeg + AstrBot（见 `模型需求清单.md`）。
-2. 账号：逐项准备并填入本地 `config.json`（见 `登入清单.md`）。
+1. 环境：Python 3.12 + Ollama + ffmpeg + AstrBot（见 `docs/model-requirements.md`）。
+2. 账号：逐项准备并填入本地 `config.json`（见 `docs/login-checklist.md`）。
 3. 启动：`scripts/start-all.cmd`（模板，先改路径与口令）。
 4. 验收：各页面能开、聊天能回、记忆能写、备份能跑。
 5. 每次发布前跑 `SECURITY.md` 里的自查命令。
