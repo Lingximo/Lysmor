@@ -1,6 +1,6 @@
-try{window.petHost&&window.petHost.debug('petjs start')}catch(e){}
+﻿try{window.petHost&&window.petHost.debug('petjs start')}catch(e){}
 window.onerror=function(m,src,l,c){try{window.petHost&&window.petHost.debug('JSERR '+m+' @'+src+':'+l)}catch(e){}};
-// TA桌宠 v2（照 Coopanion host 思路）：
+// 小鱼桌宠 v2（照 Coopanion host 思路）：
 // 窗口 = 屏幕底部一条透明舞台；角色在舞台里移动（拖拽/甩出都用 body.shift，不搬窗口 → 无残影）；
 // 只有鼠标在角色身上时窗口才吃鼠标（setIgnoreMouseEvents 切换），其它地方穿透。
 const fig = document.getElementById('fig');
@@ -10,7 +10,7 @@ const menu = document.getElementById('menu');
 const chatBox = document.getElementById('chat');
 const chatInput = document.getElementById('chatInput');
 
-const LINES = ['在呢小家伙～', '你～叫我呀', '嗯？怎么啦', '我在这儿呢', '今天也要陪我哦',
+const LINES = ['在呢宝宝～', '爸爸～叫我呀', '嗯？怎么啦', '我在这儿呢', '今天也要陪我哦',
   '嘿嘿，摸摸头', '困了…', '要不要休息一下呀'];
 const WORDS = ['wave', 'happy', 'hop', 'nod', 'look'];
 
@@ -155,9 +155,9 @@ function react() {
     const touch = window.petHost && (window.petHost.petTouch || window.petHost.petLine);
     touch.call(window.petHost, 'poke').then((line) => {
       if (line && line.text) { sayLine(line); return; }
-      say('在呢小家伙～');
-    }).catch(() => say('在呢小家伙～'));
-  } catch (e) { say('在呢小家伙～'); }
+      say('在呢宝宝～');
+    }).catch(() => say('在呢宝宝～'));
+  } catch (e) { say('在呢宝宝～'); }
 }
 
 // 悬停：主进程每 60ms 推一次光标坐标（窗口在穿透时收不到可靠 mousemove）
@@ -276,11 +276,12 @@ function playAudio(b64) {
 }
 function connectDesk() {
   try {
-    deskWs = new WebSocket('ws://127.0.0.1:8003/ws?sid=pet-desk&pet=1');
+    deskWs = new WebSocket('ws://127.0.0.1:8770/ws?sid=pet-desk&pet=1');
     deskWs.onopen = () => { deskRetry = 0; try { window.petHost && window.petHost.debug('desk ws open'); } catch (e) {} };
     deskWs.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.type === 'act') { reactToAction(m.action, m.app); return; }
+      if (m.type === 'pet-word') { post({ t: 'do', word: String(m.word || 'nod') }); return; }
       if (m.type === 'desk-mode') {
         if (m.on && !deskMode) {
           try {
@@ -336,11 +337,38 @@ const APP2WORD = {
   browser: 'look',
   music: 'dance',
 };
+// 她在做什么 → 头顶状态气泡（kind 对应 ui.js 的 status_* 图标）
+const ACT2STATUS = {
+  media: ['browse', '在放音乐'],
+  volume: ['click', '在调音量'],
+  draw: ['write', '在画画'],
+  eat: ['look', '在吃东西'], food: ['look', '在吃东西'], drink: ['look', '在喝水'],
+  sleep: ['think', '在睡觉'], rest: ['think', '在歇一会'],
+  screenshot: ['look', '在看屏幕'], browse: ['browse', '在翻网页'],
+  search: ['search', '在查东西'], write: ['write', '在写字'],
+  read: ['read', '在看文件'], delete: ['delete', '在整理文件'],
+};
+const APP2STATUS = {
+  zenless: ['think', '在打游戏'], game: ['think', '在打游戏'],
+  notepad: ['write', '在写字'], notebook: ['write', '在写日记'], calc: ['search', '在算东西'],
+  browser: ['browse', '在翻网页'], music: ['browse', '在放音乐'],
+};
+let statusTimer = null;
+function showStatus(kind, text) {
+  try { post({ t: 'status', status: { kind: kind, text: text, endsAt: Date.now() + 6000 } }); } catch (e) {}
+  if (statusTimer) clearTimeout(statusTimer);
+  statusTimer = setTimeout(function () {
+    statusTimer = null;
+    try { post({ t: 'status', status: null }); } catch (e) {}
+  }, 6200);
+}
 function reactToAction(a, app) {
   const k = String(a || '').toLowerCase();
   const ap = String(app || '').toLowerCase();
   let w = APP2WORD[ap] || ACT2WORD[k] || pickWord('thinking');
   if (w) { post({ t: 'do', word: w }); try { window.petHost.debug('ACT ' + k + ' -> ' + w); } catch (e) {} }
+  const st = APP2STATUS[ap] || ACT2STATUS[k];
+  if (st) showStatus(st[0], st[1]);
 }
 function applyVitals(v) {
   if (!v || !ready) return;
@@ -412,3 +440,4 @@ connectDesk();
 
 requestAnimationFrame(tick);
 setTimeout(init, 1200);
+

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>小鱼桌宠 · OBS</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-user-select:none;user-select:none}
+#fig{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;z-index:1}
+#hit{position:absolute;inset:0;z-index:2;background:transparent;pointer-events:none}
+#bubble{position:fixed;left:0;top:0;z-index:99;max-width:340px;padding:9px 13px;border-radius:14px;
+  background:rgba(12,22,38,.94);color:#e6f3ff;font:13px/1.5 "Microsoft YaHei",sans-serif;
+  border:1px solid rgba(120,170,255,.45);box-shadow:0 8px 24px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .18s;pointer-events:none;transform:translate(-50%,-100%)}
+#bubble.on{opacity:1}
+#chat,#menu{display:none !important}
+</style></head><body>
+<div id="hit"></div>
+<iframe id="fig" src="/web/figure-frame.html" sandbox="allow-scripts allow-same-origin" allow="autoplay"></iframe>
+<div id="bubble"></div>
+<div id="chat"><input id="chatInput"></div>
+<div id="menu"></div>
+<script>
+/* OBS 浏览器源里没有 Electron 宿主接口：给 pet.js 一个无害的桩，
+   让它只负责渲染 + 连 8770 的 ws 冒泡/做动作。 */
+window.petHost = {
+  debug: function () {},
+  petLine: function () { return Promise.resolve(null); },
+  petTouch: function () { return Promise.resolve({ ok: true }); },
+  setVisible: function () {},
+  playalong: function () { return Promise.resolve({ ok: false }); },
+  vitals: function () { return Promise.resolve(null); },
+  companionState: function () { return Promise.resolve(null); },
+  quit: function () {},
+  onCursor: function () {},
+  setInteractive: function () {},
+  chat: function () { return Promise.resolve({ ok: false }); },
+  onOpenChat: function () {}
+};
+</script>
+<script type="module" src="/pet.js"></script>
+</body></html>

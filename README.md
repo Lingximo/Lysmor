@@ -1,4 +1,4 @@
-# Lysmor
+﻿# Lysmor
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
@@ -102,6 +102,24 @@ python code/app/launch_with_check.py
 
 ---
 
+## 桌宠直播叠加（OBS，可选）
+
+想把桌宠叠到直播画面上（背景透明）？用附带的本地静态服务 + OBS 浏览器源即可：
+
+```bat
+python code\app\obs_overlay.py --port 9455
+```
+
+然后在 OBS 里 **来源 → 加号 → 浏览器**：
+
+| 项 | 值 |
+|---|---|
+| URL | `http://127.0.0.1:9455/obs-pet.html` |
+| 宽 / 高 | 建议 480 × 800（按画面调） |
+| 其它 | 勾选「关闭源时关闭页面」 |
+
+背景本身是透明的，不需要绿幕。桌宠会把气泡台词、点头/动作等同步到画面里；
+网页源没有桌面拖拽，所以只能看和听，互动仍用桌面版。
 ## 看门狗（可选，推荐）
 
 `code/tools/watch_servers.ps1` 每 3 分钟检查一次：页面服务挂了自动拉起；
@@ -205,3 +223,4 @@ Hub 里的「控制台」卡片只是 AstrBot 管理面板，其他卡片需要�
 - 本项目不附带任何角色记忆、人格设定、日记或形象素材；
 - 使用者在本地养成的角色、产生的数据与账号，完全属于使用者自己；
 - 本项目按"现状"提供，维护者不对使用后果承担责任。
+

@@ -1,5 +1,11 @@
 # 版本历史
 
+## v0.3.4
+
+- 新增：桌宠 OBS 直播叠加——`code/app/obs_overlay.py` 提供本地透明背景页面，OBS 里加「浏览器」源指向 `http://127.0.0.1:9455/obs-pet.html` 即可把桌宠叠到直播画面（无需绿幕）
+- 新增：桌宠页面支持 `pet-word` 动作消息（提醒到点时会点头）
+- 同步：`code/app/petweb/pet.js` 增加「她在做什么」状态气泡（放音乐/翻网页/画画/写字/打游戏…）
+
 ## v0.3.3
 
 - 改进：`docs/` 下五个中文文件名改成 ASCII（`setup-checklist.md`、`model-requirements.md`、`login-checklist.md`、`architecture.md`、`ui-design.md`），避免中文文件名在终端、URL、部分编辑器/工具里出问题；文档内容与标题仍是中文
