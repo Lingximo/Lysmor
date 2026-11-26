@@ -433,6 +433,17 @@ def apply_config(cfg):
     if not os.path.isdir(CODE):
         raise RuntimeError("没找到 code/ 目录，请在项目根目录运行")
 
+    # 2026-11-26：向导里填了一个新目录时，以前只写 config.json、不建目录，
+    # 口令/户型/视频配置全部静默失败，页面却显示“配置完成”。
+    dd = str(cfg.get("data_dir") or "").strip()
+    if not dd:
+        raise RuntimeError("数据目录为空——请在向导里填一个可写目录（例如 D:\\她的数据）")
+    try:
+        os.makedirs(dd, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError("建不了数据目录 %s（%s）——换一个可写目录，别放 Program Files"
+                           % (dd, exc)) from exc
+
     try:
         with open(CFG_PATH, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -496,6 +507,7 @@ def apply_config(cfg):
     if os.path.exists(plan_example) and not os.path.exists(plan):
         try:
             import shutil as _sh
+            os.makedirs(os.path.dirname(plan), exist_ok=True)
             _sh.copy2(plan_example, plan)
             print("  大平层户型：已从示例复制 plan.json")
         except Exception as exc:  # noqa: BLE001
@@ -507,6 +519,7 @@ def apply_config(cfg):
     if os.path.exists(vcfg_example) and not os.path.exists(vcfg):
         try:
             import shutil as _sh
+            os.makedirs(os.path.dirname(vcfg), exist_ok=True)
             _sh.copy2(vcfg_example, vcfg)
             print("  视频服务：已从示例复制 config.json")
         except Exception as exc:  # noqa: BLE001
