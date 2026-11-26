@@ -39,10 +39,7 @@ if (-not (Test-Path (Join-Path $Root 'config.json'))) {
     exit $LASTEXITCODE
 }
 
-Write-Host 'Starting services ...'
-& $python $entry --no-browser
-Start-Sleep -Seconds 3
-
+# 先读端口：后面要用它判断“服务真的起来了没有”
 $port = 8009
 $token = ''
 try {
@@ -51,6 +48,31 @@ try {
     if ($cfg.gate_token) { $token = [string]$cfg.gate_token }
 } catch {
     Write-Host 'config.json unreadable - using default Hub port 8009.'
+}
+
+Write-Host 'Starting services ...'
+& $python $entry --no-browser
+
+# 2026-11-26：以前固定睡 3 秒就打开浏览器，机器慢/首次启动时 Hub 还没监听，
+# 浏览器显示“连接被拒绝”（粉丝反馈的就是这个）。现在最多等 90 秒。
+$deadline = (Get-Date).AddSeconds(90)
+$up = $false
+while ((Get-Date) -lt $deadline) {
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $client.Connect('127.0.0.1', $port)
+        $up = $true
+    } catch {
+    } finally {
+        $client.Close()
+    }
+    if ($up) { break }
+    Start-Sleep -Milliseconds 600
+}
+if (-not $up) {
+    Write-Host "Hub 没有在 $port 端口起来（等了 90 秒）。"
+    Write-Host "先看 logs\ 下 8009.err.log / 8009.out.log；也可以运行 python preflight.py 体检。"
+    exit 1
 }
 
 $url = "http://127.0.0.1:$port/"

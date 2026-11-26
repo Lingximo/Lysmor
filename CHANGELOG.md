@@ -1,5 +1,15 @@
 # 版本历史
 
+## v0.3.5
+
+- 修复：配置向导刷新或重开页面后，QQ 号 / DeepSeek API Key / 口令被清空、每次都要重填——现在 `/api/defaults` 会回填已保存的 `config.json`（向导「一键应用」后也会立即回填）
+- 修复：`一键配置.cmd` 先开浏览器、后起配置服务，第一次打开常显示“连接被拒绝”——改成先起服务、等 2 秒再开页面
+- 修复：`scripts/start-all.ps1` 固定睡 3 秒就打开 Hub，机器慢/首次启动时 Hub 还没监听就报“连接被拒绝”——现在最多等 90 秒，超时会提示去看 `logs\8009.err.log`
+- 修复：看门狗每次执行都闪一下 PowerShell 窗口——改用 `wscript` 隐藏启动（`code/tools/run_watchdog_hidden.vbs`），计划任务注册同步更新
+- 修复：AstrBot 实例只查 `~/.astrbot_launcher`，装在别的目录/别的盘就永远“找不到实例”——现在会查家目录、`LOCALAPPDATA`、`APPDATA`、`ProgramData`，也支持环境变量 `ASTRBOT_LAUNCHER_DIR`；体检里对“没找到”给出可操作提示（只用网页可跳过）
+- 改进：配置服务异常会写 `setup/setup-error.log`（带 traceback），不再只给页面一句“报错”
+- 改进：`打开入口.cmd` 首次运行不再被 preflight 的“还没有 config.json”拦住，会直接进配置向导
+
 ## v0.3.4
 
 - 新增：桌宠 OBS 直播叠加——`code/app/obs_overlay.py` 提供本地透明背景页面，OBS 里加「浏览器」源指向 `http://127.0.0.1:9455/obs-pet.html` 即可把桌宠叠到直播画面（无需绿幕）

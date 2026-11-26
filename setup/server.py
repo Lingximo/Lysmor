@@ -59,6 +59,19 @@ def normalize(cfg):
     return out
 
 
+def load_saved_defaults():
+    """页面回填用：已保存的 config.json 优先，没配过才用 DEFAULTS。
+
+    2026-11-26 修：以前 /api/defaults 永远返回 DEFAULTS，刷新/重开页面就把
+    QQ 号、API Key、口令清空，使用者每次都要重填（粉丝反馈的就是这个）。
+    """
+    try:
+        with open(configure.CFG_PATH, encoding="utf-8-sig") as f:
+            return normalize(json.load(f))
+    except Exception:  # noqa: BLE001
+        return configure.DEFAULTS
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "companion-setup/0.1"
 
@@ -70,17 +83,30 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _err(self, exc, where=""):
+        """返回错误给页面，同时把 traceback 落盘——否则用户只看到一句“报错”，没法查。"""
+        try:
+            import time as _t
+            import traceback
+            with open(os.path.join(BASE, "setup-error.log"), "a", encoding="utf-8") as f:
+                f.write("[%s] %s\n%s\n" % (_t.strftime("%Y-%m-%d %H:%M:%S"),
+                                           where or "-", traceback.format_exc()))
+        except Exception:  # noqa: BLE001
+            pass
+        return self._json({"ok": False, "error": str(exc)}, 400)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/defaults":
-            return self._json(configure.DEFAULTS)
+            # 回填已保存的配置（不是静态 DEFAULTS），否则刷新就丢
+            return self._json(load_saved_defaults())
         if parsed.path == "/api/check":
             return self._json({"checks": configure.check_setup()})
         if parsed.path == "/api/autodetect":
             return self._json(configure.autodetect())
         if parsed.path == "/api/huburl":
             try:
-                cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                cfg = json.load(open(configure.CFG_PATH, encoding="utf-8-sig"))
                 hub = int(cfg.get("ports", {}).get("hub") or 8009)
                 token = cfg.get("gate_token") or ""
                 return self._json({"url": "http://127.0.0.1:%d/?t=%s" % (hub, token)})
@@ -90,13 +116,13 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
                 try:
-                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8-sig"))
                 except Exception:  # noqa: BLE001
                     pass
                 data = configure.load_identity(cfg)
                 return self._json({"ok": True, "identity": data["identity"], "persona": data["persona"]})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         rel = parsed.path.strip("/") or "index.html"
         if ".." in rel or rel.startswith("/"):
             self.send_response(404)
@@ -118,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 return self._json({"results": configure.env_install_missing()})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/enroll":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
@@ -126,24 +152,24 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
                 # 若已配置过，样本存进用户的 data_dir
                 try:
-                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8-sig"))
                 except Exception:  # noqa: BLE001
                     pass
                 return self._json(configure.save_enrollment(cfg, req.get("voice"), req.get("faces")))
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/import_asset":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
                 req = json.loads(raw.decode("utf-8"))
                 cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
                 try:
-                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8-sig"))
                 except Exception:  # noqa: BLE001
                     pass
                 return self._json(configure.import_assets(cfg, req.get("kind"), req.get("files")))
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/autoconfig":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
@@ -173,7 +199,7 @@ class Handler(BaseHTTPRequestHandler):
                                    "token": cfg["gate_token"], "astrbot": astr,
                                    "detected": det, "enroll": enroll})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/configure":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
@@ -184,7 +210,7 @@ class Handler(BaseHTTPRequestHandler):
                                    "config_path": configure.CFG_PATH,
                                    "token": cfg["gate_token"], "astrbot": astr})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/optimize_identity":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
@@ -193,20 +219,20 @@ class Handler(BaseHTTPRequestHandler):
                 text = configure.optimize_identity(req.get("identity"), llm)
                 return self._json({"ok": True, "persona": text})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         if parsed.path == "/api/save_identity":
             try:
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
                 req = json.loads(raw.decode("utf-8"))
                 cfg = {"data_dir": configure.DEFAULTS["data_dir"]}
                 try:
-                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8"))
+                    cfg = json.load(open(configure.CFG_PATH, encoding="utf-8-sig"))
                 except Exception:  # noqa: BLE001
                     pass
                 path = configure.save_identity(cfg, req.get("identity"), req.get("persona"))
                 return self._json({"ok": True, "path": path})
             except Exception as exc:  # noqa: BLE001
-                return self._json({"ok": False, "error": str(exc)}, 400)
+                return self._err(exc)
         self.send_response(404)
         return self.end_headers()
 

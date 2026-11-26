@@ -133,6 +133,10 @@
       $("bot_panel").value = d.bot_panel || 8012;
       $("base_url").value = (d.llm && d.llm.base_url) || "";
       $("model").value = (d.llm && d.llm.model) || "deepseek-chat";
+      // 2026-11-26：已保存的账号/口令也要回填，否则刷新一次就得重填
+      if ($("api_key")) { $("api_key").value = (d.llm && d.llm.api_key) || ""; }
+      if ($("fish_qq")) { $("fish_qq").value = d.fish_qq || ""; }
+      if ($("gate_token")) { $("gate_token").value = d.gate_token || ""; }
       buildPortInputs(d);
       // 自动探测 AstrBot
       fetch("/api/autodetect").then(function (r2) { return r2.json(); }).then(function (det) {
@@ -354,6 +358,7 @@
         box.innerHTML = "<b>✅ 配置完成！</b><br>重写了 " + d.files + " 个文件 / " + d.repl + " 处。<br>" +
           "<b>大脑</b>：" + (d.astrbot || "") + "<br><br><b>下一步</b>：双击 打开入口.cmd 开始使用。";
         runCheck();
+        refreshDefaults();   // 回填刚保存的值，证明刷新不会丢
       } else {
         box.className = "err";
         box.innerHTML = "<b>❌ 出错了：</b>" + (d.error || "未知错误");

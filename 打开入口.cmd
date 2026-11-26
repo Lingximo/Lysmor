@@ -9,7 +9,8 @@ setlocal
 where python >nul 2>nul
 if errorlevel 1 goto :nopython
 
-python "%~dp0preflight.py"
+rem --no-config: first run has no config.json yet; open_entry.py will open the wizard.
+python "%~dp0preflight.py" --no-config
 if errorlevel 1 (
   echo.
   echo [!] Fix the items above, then double-click this file again.

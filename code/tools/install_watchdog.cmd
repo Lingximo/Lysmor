@@ -12,7 +12,7 @@ set TASK=Companion-Watchdog
 
 if /I "%~1"=="/uninstall" goto uninstall
 
-schtasks /Create /TN "%TASK%" /TR "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%~dp0watch_servers.ps1\"" /SC MINUTE /MO 3 /F
+schtasks /Create /TN "%TASK%" /TR "wscript.exe //B //Nologo \"%~dp0run_watchdog_hidden.vbs\"" /SC MINUTE /MO 3 /F
 if %errorlevel%==0 (
   echo [OK] Registered: %TASK%  ^(runs every 3 minutes^)
 ) else (

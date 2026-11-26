@@ -56,27 +56,64 @@ PORT_KEY = [
 TEXT_EXT = (".py", ".js", ".html", ".css", ".md", ".txt", ".ps1", ".cmd", ".xml", ".cs")
 
 
-def autodetect():
+def _launcher_dirs(user_dir=""):
+    """AstrBot 启动器可能所在的目录。
+
+    以前只查 ~/.astrbot_launcher，装到别处（或换了用户名/盘符）就永远“找不到实例”。
+    这里把常见的家目录、LOCALAPPDATA/APPDATA、ProgramData 和环境变量都算上。
+    """
+    cands = []
+    env = os.environ.get("ASTRBOT_LAUNCHER_DIR") or os.environ.get("ASTRBOT_HOME") or ""
+    if env:
+        env = os.path.expandvars(env)
+        cands.append(env)
+        if not os.path.basename(env).lower().endswith(".astrbot_launcher"):
+            cands.append(os.path.join(env, ".astrbot_launcher"))
+    for base in (user_dir, os.path.expanduser("~"), os.environ.get("USERPROFILE"),
+                 os.environ.get("LOCALAPPDATA"), os.environ.get("APPDATA"),
+                 os.environ.get("ProgramData")):
+        if base:
+            cands.append(os.path.join(base, ".astrbot_launcher"))
+            cands.append(os.path.join(base, "astrbot_launcher"))
+    out, seen = [], set()
+    for p in cands:
+        try:
+            p = os.path.abspath(p)
+        except Exception:  # noqa: BLE001
+            continue
+        key = os.path.normcase(p)
+        if key in seen or not os.path.isdir(p):
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
+
+
+def autodetect(user_dir=""):
     """自动探测这台机器上的 AstrBot 实例与面板端口。"""
-    out = {"bot_instance": "", "bot_panel": 8012, "cmd_config": ""}
-    base = os.path.join(os.path.expanduser("~"), ".astrbot_launcher", "instances")
+    out = {"bot_instance": "", "bot_panel": 8012, "cmd_config": "", "instance_dir": ""}
     candidates = []
-    if os.path.isdir(base):
+    for launcher in _launcher_dirs(user_dir):
+        base = os.path.join(launcher, "instances")
+        if not os.path.isdir(base):
+            continue
         for name in os.listdir(base):
             p = os.path.join(base, name)
             cfgp = os.path.join(p, "core", "data", "cmd_config.json")
             if os.path.isdir(p) and os.path.exists(cfgp):
                 try:
-                    candidates.append((os.path.getmtime(p), name, cfgp))
+                    mt = os.path.getmtime(p)
                 except OSError:
-                    candidates.append((0, name, cfgp))
+                    mt = 0
+                candidates.append((mt, name, cfgp, p))
     if candidates:
         candidates.sort(reverse=True)
-        _, inst, cfgp = candidates[0]
+        _, inst, cfgp, inst_dir = candidates[0]
         out["bot_instance"] = inst
         out["cmd_config"] = cfgp
+        out["instance_dir"] = inst_dir
         try:
-            dash = json.load(open(cfgp, encoding="utf-8")).get("dashboard") or {}
+            dash = json.load(open(cfgp, encoding="utf-8-sig")).get("dashboard") or {}
             if isinstance(dash.get("port"), int):
                 out["bot_panel"] = dash["port"]
         except Exception:  # noqa: BLE001
@@ -158,7 +195,9 @@ def env_install_missing():
         results.append({"name": "AstrBot", "ok": True, "detail": "已找到实例 " + det["bot_instance"]})
     else:
         results.append({"name": "AstrBot", "ok": False,
-                        "detail": "需要手动装：官方 GitHub 仓库下载启动器，建实例后重跑本页即可自动识别"})
+                        "detail": "没自动找到启动器实例（查了家目录 / LOCALAPPDATA / APPDATA 下的 "
+                                  ".astrbot_launcher）。如果已经装了：设环境变量 ASTRBOT_LAUNCHER_DIR "
+                                  "指向启动器目录，或在向导里手填实例 UUID；只用网页可以先继续"})
 
     # 模型：只有 Ollama 真能用才拉，否则如实说没拉
     if ollama_ok:
@@ -263,7 +302,7 @@ def patch_astrbot_llm(cfg):
     if not os.path.exists(path):
         return "没找到 AstrBot 配置（%s）——装好 AstrBot 后重跑配置即可自动写入" % path
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8-sig") as f:
             data = json.load(f)
         sources = data.get("provider_sources")
         if not isinstance(sources, list):
@@ -394,8 +433,12 @@ def apply_config(cfg):
     if not os.path.isdir(CODE):
         raise RuntimeError("没找到 code/ 目录，请在项目根目录运行")
 
-    with open(CFG_PATH, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
+    try:
+        with open(CFG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except OSError as exc:
+        raise RuntimeError("写不了 config.json（%s）——请把整个项目放到可写目录（桌面/文档），"
+                           "不要放在 Program Files 或只读盘" % exc) from exc
 
     repl = [
         ("D:\\你的数据目录", cfg["data_dir"]),                                  # 单反斜杠
@@ -429,7 +472,13 @@ def apply_config(cfg):
                 text, c = pat.subn(new, text)
                 n_repl += c
             if text != raw:
-                open(p, "w", encoding="utf-8", newline="").write(text)
+                try:
+                    with open(p, "w", encoding="utf-8", newline="") as f:
+                        f.write(text)
+                except OSError as exc:
+                    # 单个文件被占用/只读（杀软、同步盘）不该让整次配置失败
+                    print("  ! 跳过写不了的 %s：%s" % (p, str(exc)[:80]))
+                    continue
                 n_files += 1
                 for old, _ in repl:
                     n_repl += raw.count(old)
@@ -493,7 +542,7 @@ def check_setup():
 
     # 1) config.json
     try:
-        cfg = json.load(open(CFG_PATH, encoding="utf-8"))
+        cfg = json.load(open(CFG_PATH, encoding="utf-8-sig"))
         add("ok", "config.json", "已生成", "")
     except Exception:
         cfg = None
@@ -599,7 +648,7 @@ def check_setup():
         ap = astrbot_config_path(cfg)
         if os.path.exists(ap):
             try:
-                data = json.load(open(ap, encoding="utf-8"))
+                data = json.load(open(ap, encoding="utf-8-sig"))
                 for item in data.get("provider_sources") or []:
                     if isinstance(item, dict) and item.get("provider") == "deepseek" and item.get("key"):
                         where = "（在 AstrBot 模型配置里）"
@@ -610,6 +659,15 @@ def check_setup():
         add("ok", "DeepSeek API Key", "已填写" + where, "")
     else:
         add("warn", "DeepSeek API Key", "还没有填", "向导「③ 大脑」里填；会同时写进本地 config.json 和 AstrBot 模型配置")
+
+    # 12) AstrBot 实例（QQ 通道需要；只用网页可以跳过）
+    det = autodetect((cfg or {}).get("user_dir") or "")
+    if det["bot_instance"]:
+        add("ok", "AstrBot 实例", det["bot_instance"], "")
+    else:
+        add("warn", "AstrBot 实例", "没自动找到（QQ 通道需要）",
+            "已装的话：在 config.json 填 bot_instance，或设环境变量 ASTRBOT_LAUNCHER_DIR 指向启动器目录；"
+            "只用网页聊天可以先跳过")
     return checks
 
 

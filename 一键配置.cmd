@@ -17,13 +17,16 @@ if errorlevel 1 (
   exit /b 1
 )
 
-start "" http://127.0.0.1:8090/
 where pythonw >nul 2>nul
 if errorlevel 1 (
-  python "%~dp0setup\server.py"
+  start "" python "%~dp0setup\server.py"
 ) else (
   start "" pythonw "%~dp0setup\server.py"
 )
+rem Wait a moment for the local setup server, then open the browser.
+rem (Opening before the server is up shows a scary "connection refused".)
+ping -n 3 127.0.0.1 >nul
+start "" http://127.0.0.1:8090/
 exit /b 0
 
 :nopython
