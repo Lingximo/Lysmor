@@ -1,5 +1,9 @@
 # 版本历史
 
+## v0.3.7
+
+- 修复：一键配置把 DeepSeek API Key 写成**字符串**，而 AstrBot 的 `provider_sources[].key` 是**列表**（可放多把钥匙）——会导致 AstrBot 读不到 Key。现在写成 `["sk-…"]`，并在写入前照常备份 `cmd_config.json`
+
 ## v0.3.6
 
 - 修复：向导里填**新的数据目录**时，`apply_config` 只写 `config.json`、不创建该目录，导致口令/户型/视频配置静默失败，页面却显示“配置完成”——现在先建目录，建不了会明确报错

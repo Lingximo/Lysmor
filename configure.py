@@ -317,7 +317,9 @@ def patch_astrbot_llm(cfg):
         bak = path + ".bak-before-llm-" + time.strftime("%Y%m%d_%H%M%S")
         with open(bak, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        target["key"] = key
+        # 2026-11-26：AstrBot 的 provider_sources[].key 是**列表**（可放多把钥匙）。
+        # 以前写成字符串，配置结构就不对了，AstrBot 可能读不到 Key。
+        target["key"] = [key]
         base = ((cfg.get("llm") or {}).get("base_url") or "").strip()
         if base and not target.get("api_base"):
             target["api_base"] = base
